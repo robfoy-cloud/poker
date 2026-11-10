@@ -70,14 +70,15 @@
       <div id="actions" class="actions"></div>
     </section>
 
-    <section class="coach-panel">
+    <button id="coachTab" class="coach-tab" aria-label="Open the coach panel" aria-controls="coachPanel"><span class="tab-label">Coach</span><span id="coachBadge" class="badge" hidden></span></button>
+    <section class="coach-panel" id="coachPanel">
       <div class="coach-head">
         <span>Coach</span>
         <div class="coach-tools">
           <button id="stepBtn" class="small toggle">Step: off</button>
           <button id="oddsBtn" class="small"><span class="long">Hands &amp; </span>odds</button>
           <button id="askBtn" class="small">Ask</button>
-          <button id="expandBtn" class="small expand" aria-label="Make the coach panel bigger" aria-pressed="false">⤢</button>
+          <button id="drawerClose" class="small drawer-close" aria-label="Close the coach panel">Close ›</button>
         </div>
       </div>
       <div id="coachLog" class="coach-log" aria-live="polite"></div>

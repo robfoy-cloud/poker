@@ -464,10 +464,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .my-bet .chipcol.tap { padding: 2px 3px; }
 .my-bet .chip { --w: 24px; --h: 7px; }
 
-.coach-panel .prompt { margin: 6px 12px 0; }
-.small.expand { display: none; }
 
-/* ---------- phones and small tablets: everything on one screen ---------- */
+/* ---------- phones and small tablets: the coach is a drawer ---------- */
+.coach-tab, .drawer-close { display: none; }
 @media (max-width: 899px) {
   .table-wrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 26px 4px 6px; }
   .table { flex: 1 1 auto; min-height: 150px; width: 100%; aspect-ratio: auto; max-height: none; }
@@ -475,27 +474,48 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
   .chip-key .legend { font-size: 13px; gap: 9px; }
   .chip-key .chip-face { --w: 14px; --h: 14px; }
   .key-label { font-size: 12px; }
-  .coach-panel { flex: 0 0 auto; height: 31dvh; min-height: 170px; border-top: 1px solid var(--line); }
-  .coach-panel.expanded { height: 64dvh; }
-  .coach-head { padding: 5px 10px; }
-  .coach-head > span { font-size: 18px; }
+
+  .coach-panel {
+    position: fixed; right: 0; top: var(--drawer-top, 56px); bottom: var(--drawer-bottom, 200px);
+    width: min(90vw, 440px); z-index: 30; border-radius: 16px 0 0 16px; overflow: hidden;
+    border: 1px solid var(--line); border-right: 0; border-left: 3px solid var(--brass);
+    box-shadow: -10px 0 30px rgba(18,30,25,.3);
+    transform: translateX(105%); visibility: hidden;
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), visibility 0s linear .28s;
+  }
+  .coach-panel.open { transform: none; visibility: visible; transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+  .coach-head { padding: 6px 10px; }
+  .coach-head > span { font-size: 19px; }
   .coach-tools .small { padding: 5px 9px; font-size: 14px; }
-  .small.expand { display: inline-block; font-size: 16px; line-height: 1; padding: 5px 9px; }
-  .coach-log { font-size: 16.5px; padding: 2px 10px 10px; position: relative; }
-  .coach-panel .prompt { margin: 6px 10px 2px; font-size: 15px; padding: 5px 9px; }
+  .drawer-close { display: inline-block; }
+  .coach-log { font-size: 17px; padding: 4px 12px 14px; }
+
+  .coach-tab {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    position: fixed; right: 0; top: 38%; z-index: 25;
+    padding: 12px 6px 12px 8px; border: 0; border-radius: 12px 0 0 12px;
+    background: linear-gradient(180deg, #24704f, var(--baize-deep)); color: var(--brass-soft);
+    box-shadow: -3px 3px 10px rgba(18,30,25,.35), inset 2px 0 0 var(--brass);
+  }
+  .coach-tab.hidden { display: none; }
+  .tab-label { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-size: 16px; letter-spacing: 1px; }
+  .badge { min-width: 20px; height: 20px; border-radius: 10px; padding: 0 5px; background: var(--brass); color: var(--baize-deep); font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .badge[hidden] { display: none; }
+  .coach-tab.alert .badge { background: #e05a5f; color: #fff; }
+  .coach-tab.nudge { animation: nudge .6s ease-in-out 2; }
+  @keyframes nudge { 0%, 100% { transform: none; } 30% { transform: translateX(-7px); } 60% { transform: translateX(-2px); } }
+
   .me-panel { padding: 6px 10px 8px; }
   .me-row { align-items: center; }
   .actions { margin-top: 8px; }
 }
 @media (max-width: 430px) { .coach-tools .long { display: none; } }
-@media (max-height: 700px) and (max-width: 899px) {
-  .coach-panel { height: 27dvh; min-height: 140px; }
-  .table-wrap { padding-top: 22px; }
-  .table { min-height: 120px; }
+@media (max-height: 600px) and (max-width: 899px) {
   .card.lg { width: 38px; height: 53px; } .card.lg .ix { font-size: 15px; } .card.lg .pip { font-size: 24px; }
   .chips-lg .chip { --h: 5px; }
   .actions button { padding: 8px 4px; }
 }
+@media (prefers-reduced-motion: reduce) { .coach-panel { transition: none !important; } .coach-tab.nudge { animation: none; } }
 .coach-log { position: relative; }
 
 @media (max-height: 600px) and (max-width: 899px) {

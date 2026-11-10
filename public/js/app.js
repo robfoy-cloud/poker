@@ -63,8 +63,8 @@ function makeIO(myGen) {
       const L = settings.level;
       let prompt;
       if (L === 1) prompt = ctx.canCheck
-        ? `<b>Your turn.</b> Check, or push chips forward to bet. My tip is in the coach panel.`
-        : `<b>Your turn.</b> Push chips forward to call or raise, or fold. My tip is in the coach panel.`;
+        ? `<b>Your turn.</b> Check, or push chips forward to bet. My tip is in the ${narrow.matches ? 'Coach tab' : 'coach panel'}.`
+        : `<b>Your turn.</b> Push chips forward to call or raise, or fold. My tip is in the ${narrow.matches ? 'Coach tab' : 'coach panel'}.`;
       else if (L === 2) prompt = `<b>Your turn.</b>`;
       else prompt = `Your move.`;
       if (ctx.warnedFold) prompt = `You can check for free. Press <b>Fold</b> again to fold anyway.`;
@@ -220,22 +220,60 @@ function formatClaude(t) {
 // ---------- start ----------
 checkClaude();
 
-// ---------- phone layout ----------
-// On phones the instructions sit at the top of the coach panel so both stay in view.
+// ---------- phone layout: the coach slides out from the right ----------
 const narrow = window.matchMedia('(max-width: 899px)');
-function placePrompt() {
-  const prompt = $('prompt');
-  if (narrow.matches) document.querySelector('.coach-head').after(prompt);
-  else document.querySelector('.me-panel').prepend(prompt);
+const panel = $('coachPanel');
+const tab = $('coachTab');
+function drawerBounds() {
+  // The drawer covers the table only, so your cards and buttons stay usable.
+  const top = document.querySelector('.topbar').getBoundingClientRect().bottom + ($('updateBar').hidden ? 0 : $('updateBar').offsetHeight);
+  const me = document.querySelector('.me-panel').getBoundingClientRect();
+  document.documentElement.style.setProperty('--drawer-top', Math.round(top) + 'px');
+  document.documentElement.style.setProperty('--drawer-bottom', Math.round(window.innerHeight - me.top) + 'px');
 }
-narrow.addEventListener('change', placePrompt);
-placePrompt();
-$('expandBtn').onclick = () => {
-  const on = document.querySelector('.coach-panel').classList.toggle('expanded');
-  $('expandBtn').setAttribute('aria-pressed', on);
-  $('expandBtn').textContent = on ? '⤡' : '⤢';
-  const log = $('coachLog'); log.scrollTop = log.scrollHeight;
+function openDrawer() {
+  drawerBounds();
+  panel.classList.add('open'); tab.classList.add('hidden');
+  ui.unread = 0; ui.alert = false; updateBadge();
+  const log = $('coachLog');
+  // land on the newest message, from its start
+  const last = log.lastElementChild;
+  if (last && last.offsetHeight > log.clientHeight - 10) log.scrollTop = last.offsetTop - 6; else log.scrollTop = log.scrollHeight;
+}
+function closeDrawer() { panel.classList.remove('open'); tab.classList.remove('hidden'); }
+function updateBadge() {
+  const b = $('coachBadge');
+  b.hidden = !ui.unread;
+  b.textContent = ui.unread > 9 ? '9+' : ui.unread;
+  tab.classList.toggle('alert', !!ui.alert);
+}
+ui.unread = 0;
+ui.onCoachMessage = (kind) => {
+  if (!narrow.matches || panel.classList.contains('open')) return;
+  if (kind === 'note' || kind === 'q') return;
+  ui.unread++;
+  if (kind === 'mistake' || kind === 'advice') {
+    ui.alert = true;
+    tab.classList.remove('nudge'); void tab.offsetWidth; tab.classList.add('nudge');
+  }
+  updateBadge();
 };
+tab.onclick = openDrawer;
+$('drawerClose').onclick = closeDrawer;
+// swipe the drawer to the right to close it, or swipe the tab to the left to open it
+let sx = null, sy = null;
+const touchStart = e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; };
+panel.addEventListener('touchstart', touchStart, { passive: true });
+panel.addEventListener('touchend', e => {
+  if (sx == null) return;
+  const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+  if (dx > 70 && Math.abs(dy) < 50) closeDrawer();
+  sx = null;
+});
+tab.addEventListener('touchstart', touchStart, { passive: true });
+tab.addEventListener('touchend', e => { if (sx != null && e.changedTouches[0].clientX - sx < -30) openDrawer(); sx = null; });
+window.addEventListener('resize', () => { if (panel.classList.contains('open')) drawerBounds(); });
+narrow.addEventListener('change', () => { if (!narrow.matches) closeDrawer(); });
 
 // ---------- updates ----------
 // The app knows its own version; version.json on the server says what's newest.

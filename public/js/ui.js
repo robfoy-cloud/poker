@@ -50,7 +50,7 @@ export class UI {
     // Long messages (like advice) are shown from their start; short ones just scroll into view.
     if (div.offsetHeight > log.clientHeight - 10) log.scrollTop = div.offsetTop - 6;
     else log.scrollTop = log.scrollHeight;
-    if (kind === 'mistake' && window.innerWidth < 900) div.scrollIntoView({ block: 'nearest' });
+    if (this.onCoachMessage) this.onCoachMessage(kind);
   }
   newHandDivider(n) {
     const d = document.createElement('div');

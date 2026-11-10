@@ -6,6 +6,7 @@ import { Coach } from './coach.js';
 import { botDecide, STYLES } from './ai.js';
 import { searchGlossary } from './glossary.js';
 import { Trainer } from './trainer.js';
+import { ShowdownTrainer } from './showdown.js';
 
 const $ = id => document.getElementById(id);
 const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
@@ -20,6 +21,7 @@ const settings = loadSettings();
 const ui = new UI(settings);
 const coach = new Coach(ui, settings);
 const trainer = new Trainer(ui);
+const sdTrainer = new ShowdownTrainer(ui, settings);
 let gen = 0;
 const never = () => new Promise(() => {});
 
@@ -138,8 +140,17 @@ $('stepBtn').onclick = () => {
   ui.coachSay(settings.step ? 'Step mode on: tap <b>Next move</b> to advance each opponent\'s turn.' : 'Step mode off: opponents play at the chosen speed.', 'note');
 };
 $('oddsBtn').onclick = () => ui.showRanks();
-$('trainBtn').onclick = () => trainer.open();
+function openTrainers() {
+  $('infoBody').innerHTML = `<h2>Trainers</h2>
+    <button class="menu-item trainer-pick" id="tChen"><b>Starting hands</b><span class="muted">Score two cards with the Chen formula and see which seats can play them.</span></button>
+    <button class="menu-item trainer-pick" id="tShow"><b>Who wins the showdown?</b><span class="muted">Two to four hands and a full board — pick the winner, then see why.</span></button>`;
+  ui.open('info');
+  $('tChen').onclick = () => trainer.open();
+  $('tShow').onclick = () => sdTrainer.open();
+}
+$('trainBtn').onclick = openTrainers;
 $('mTrain').onclick = () => { ui.close('menu'); trainer.open(); };
+$('mShow').onclick = () => { ui.close('menu'); sdTrainer.open(); };
 $('chipKey').onclick = () => ui.showChips();
 $('menuBtn').onclick = () => ui.open('menu');
 $('mNew').onclick = () => { ui.close('menu'); openSetup(); };

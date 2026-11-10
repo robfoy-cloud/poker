@@ -190,3 +190,27 @@ export function chenSteps(h) {
   const total = Math.ceil(s);
   return { steps, raw: s, total, rounded: total !== s };
 }
+
+// The best five cards out of up to seven (for showing which cards play).
+export function bestFive(cards) {
+  let best = null, bestCards = null;
+  const n = cards.length;
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+    const five = cards.filter((_, i) => i !== a && i !== b);
+    if (n === 6 && b !== n - 1) continue;
+    const e = evaluate(five.length > 5 ? five.slice(0, 5) : five);
+    if (!best || e.score > best.score) { best = e; bestCards = five; }
+  }
+  if (n === 5) { best = evaluate(cards); bestCards = cards.slice(); }
+  // order the five the way you'd read the hand: the made part first, then kickers by rank
+  const order = best.kickers;
+  bestCards = bestCards.slice().sort((x, y) => {
+    const ix = order.indexOf(x.r), iy = order.indexOf(y.r);
+    return (ix === -1 ? 9 : ix) - (iy === -1 ? 9 : iy) || y.r - x.r;
+  });
+  if (best.cat === 4 || best.cat === 8) {
+    const wheel = best.kickers[0] === 5;
+    bestCards.sort((x, y) => (wheel ? (x.r === 14 ? 1 : x.r) : x.r) < (wheel ? (y.r === 14 ? 1 : y.r) : y.r) ? 1 : -1);
+  }
+  return { ...best, cards: bestCards };
+}

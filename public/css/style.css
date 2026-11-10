@@ -264,7 +264,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .coach-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid var(--line); background: #fbfcfa; }
 .coach-head > span { font-family: var(--display); font-size: 20px; color: var(--baize); }
 .coach-tools { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
-.coach-log { padding: 6px 12px 16px; overflow-y: auto; flex: 1; min-height: 0; font-size: 16px; line-height: 1.5; }
+.coach-log { padding: 6px 12px 16px; overflow-y: auto; flex: 1; min-height: 0; font-size: 17.5px; line-height: 1.5; }
 .msg { padding: 7px 11px; border-radius: 10px; margin: 7px 0; background: #f0f3ef; }
 .msg.action { background: #eef2ef; }
 .msg.you { background: #f4ecec; }
@@ -274,7 +274,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .msg.street { background: #e6efe9; border-left: 4px solid #3f8b6a; border-radius: 0 10px 10px 0; }
 .msg.result { background: #e3f3e9; border-left: 4px solid #3c9d68; border-radius: 0 10px 10px 0; font-weight: 600; }
 .msg.good { background: #e3f3e9; }
-.msg.note { background: transparent; color: var(--muted); font-size: 14.5px; padding-left: 2px; }
+.msg.note { background: transparent; color: var(--muted); font-size: 16px; padding-left: 2px; }
 .msg.claude { background: #f6f1e4; border-left: 4px solid var(--brass); border-radius: 0 10px 10px 0; }
 .msg.q { background: transparent; text-align: right; color: var(--muted); font-style: italic; }
 .divider { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-size: 14px; color: var(--baize); margin: 16px 0 6px; }
@@ -402,3 +402,45 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
   .top-actions select { font-size: 14px; padding: 4px 22px 4px 10px; background-position: calc(100% - 13px) 52%, calc(100% - 8px) 52%; }
   .iconbtn { font-size: 22px; padding: 2px 2px; }
 }
+
+/* ---------- trainers ---------- */
+.trainer-pick { display: flex; flex-direction: column; gap: 3px; }
+.trainer-pick b { font-family: var(--display); font-weight: 400; font-size: 19px; color: var(--baize); }
+.sd-opts { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.seg { border: 1px solid #c2cdc4; background: #fff; border-radius: 999px; min-width: 40px; padding: 5px 10px; font-weight: 700; }
+.seg.on { background: var(--baize); border-color: var(--baize-deep); color: var(--ivory); }
+.sd-tricky { margin: 0 0 0 auto; }
+.sd-board { border-radius: 16px; padding: 10px 10px 14px; text-align: center;
+  background: radial-gradient(ellipse at 50% 40%, #23704f 0%, var(--baize) 60%, #134432 100%);
+  box-shadow: inset 0 0 0 5px var(--oxblood), inset 0 0 0 6.5px var(--brass), inset 0 0 26px rgba(0,0,0,.4); }
+.sd-board-label { font-family: var(--display); color: var(--brass-soft); font-size: 15px; margin-bottom: 6px; }
+.sd-cards { display: flex; justify-content: center; gap: 5px; }
+.sd-help { margin: 10px 0 6px; }
+.sd-players { display: flex; flex-direction: column; gap: 8px; }
+.sd-player {
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "name hole" "best best"; align-items: center; gap: 4px 10px;
+  text-align: left; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 10px 12px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.sd-player:not(:disabled):active { transform: scale(.99); }
+.sd-player.picked { border-color: var(--baize); background: #eef5f0; box-shadow: 0 0 0 3px rgba(29,92,69,.18); }
+.sd-player.won { border-color: #3c9d68; background: #e3f3e9; }
+.sd-player.lost { opacity: .85; }
+.sd-player:disabled { cursor: default; color: inherit; }
+.sd-name { grid-area: name; font-size: 18px; font-weight: 700; display: flex; flex-direction: column; gap: 2px; }
+.sd-place { font-size: 13px; font-weight: 600; color: var(--muted); }
+.sd-player.won .sd-place { color: #2d7a52; }
+.sd-player.picked:not(.won):not(.lost) .sd-place { color: var(--baize); }
+.sd-hole { grid-area: hole; display: flex; gap: 4px; }
+.sd-best { grid-area: best; display: flex; flex-direction: column; gap: 4px; padding-top: 6px; border-top: 1px dashed var(--line); margin-top: 4px; }
+.sd-hand { font-weight: 700; }
+.sd-five { display: flex; gap: 4px; }
+.sd-five .card.lg { width: 38px; height: 53px; }
+.sd-five .card.lg .ix { font-size: 15px; } .sd-five .card.lg .pip { font-size: 24px; }
+.card.own { box-shadow: 0 0 0 2.5px var(--brass), 0 2px 3px rgba(0,0,0,.35); }
+.card.dim { opacity: .38; }
+.sd-board .card.lg { width: 44px; height: 62px; }
+@media (max-width: 380px) { .sd-board .card.lg { width: 40px; height: 56px; } }
+.sd-player.picked.lost { border-color: var(--oxblood); background: #f8e9ea; box-shadow: none; }
+.sd-player.picked.lost .sd-place { color: var(--oxblood); }
+.sd-player.won.picked { box-shadow: 0 0 0 3px rgba(60,157,104,.25); }

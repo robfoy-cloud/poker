@@ -47,7 +47,9 @@ export class UI {
     log.appendChild(div);
     // keep the log from growing forever
     while (log.children.length > 400) log.removeChild(log.firstChild);
-    log.scrollTop = log.scrollHeight;
+    // Long messages (like advice) are shown from their start; short ones just scroll into view.
+    if (div.offsetHeight > log.clientHeight - 10) log.scrollTop = div.offsetTop - 6;
+    else log.scrollTop = log.scrollHeight;
     if (kind === 'mistake' && window.innerWidth < 900) div.scrollIntoView({ block: 'nearest' });
   }
   newHandDivider(n) {
@@ -114,7 +116,7 @@ export class UI {
       if (!p.isHuman && !p.out && !p.folded && p.hole.length) {
         cards = p.shown ? p.hole.map(c => cardHTML(c, 'sm')).join('') : p.hole.map(() => backHTML('sm')).join('');
       }
-      const stack = p.isHuman ? '' : `<button class="stack-btn" data-count-seat="${i}" aria-label="Count ${esc(p.name)}'s chips">${chipsHTML(stackComposition(p.stack), { size: 'sm', maxPerColumn: 10 })}</button>`;
+      const stack = p.isHuman ? '' : `<button class="stack-btn" data-count-seat="${i}" aria-label="Count ${esc(p.name)}'s chips">${chipsHTML(stackComposition(p.stack, 6), { size: 'sm', maxPerColumn: 8 })}</button>`;
       const total = show ? `<span class="total">${p.stack}</span>` : '';
       const act = p.out ? 'Out' : (p.lastAction && p.lastAction !== pos[i] && !(pos[i] || '').endsWith(p.lastAction) ? p.lastAction : '');
       const handName = p.shown && p.best ? `<div class="act">${esc(p.best.name)}</div>` : '';
@@ -122,7 +124,10 @@ export class UI {
         <div class="cards">${cards}</div>
         <div class="plate"><div class="nm">${esc(p.name)}</div><div class="pos">${pos[i] || ''}${act ? ` <span class="act-inline">${esc(act)}</span>` : ''}</div>${stack}${total}${handName}</div>
       </div>`;
-      if (p.bet > 0) {
+      if (p.isHuman) {
+        const b = this.seatXY(i, n, 0.58);
+        seatsHTML += `<div class="bet-spot my-spot" id="myTableBet" style="left:${b.x}%;top:${b.y}%"></div>`;
+      } else if (p.bet > 0) {
         const b = this.seatXY(i, n, 0.58);
         seatsHTML += `<div class="bet-spot" style="left:${b.x}%;top:${b.y}%">${chipsHTML(betComposition(p.bet), { size: 'md' })}${show ? `<span class="total">${p.bet}</span>` : ''}</div>`;
       }
@@ -157,9 +162,19 @@ export class UI {
     $('myStack').innerHTML = chipsHTML(counts, { size: 'lg', interactive, maxPerColumn: 10, attr: 'id="myChips"' });
     $('myStack').classList.toggle('change-mode', this.changeMode);
     $('myTotal').textContent = this.settings.showTotals ? (this.myCounts ? totalOf(this.myCounts) : me.stack) : '';
-    const bc = this.betCounts;
-    $('myBet').innerHTML = bc && totalOf(bc) > 0 ? chipsHTML(bc, { size: 'lg', interactive: true, attr: 'id="betChips"' }) + (this.settings.showTotals ? `<span class="total" style="margin-left:8px">${totalOf(bc)}</span>` : '')
-      : (me.bet > 0 && !bc ? chipsHTML(betComposition(me.bet), { size: 'lg' }) : '');
+    // Your bet sits on the table in front of your seat: chips already in, plus any you're pushing now.
+    const spot = $('myTableBet');
+    if (spot) {
+      const bc = this.betCounts;
+      const staged = bc ? totalOf(bc) : 0;
+      let h = '';
+      if (me.bet > 0) h += chipsHTML(betComposition(me.bet), { size: 'md' });
+      if (staged > 0) h += chipsHTML(bc, { size: 'md', interactive: true, attr: 'class="chips chips-md my-bet"' });
+      else if (bc) h += `<span class="bet-hint">Your bet</span>`;
+      const show = this.settings.showTotals;
+      spot.innerHTML = `<div class="my-bet-row">${h}</div>` + (show && (me.bet + staged) > 0 ? `<span class="total">${me.bet + staged}</span>` : '');
+      spot.classList.toggle('staging', !!bc);
+    }
   }
 
   // ---------- your chips ----------
@@ -375,7 +390,7 @@ export class UI {
       if (col) {
         const i = +col.dataset.denom;
         if (col.closest('#myChips')) this.onStackTap(i);
-        else if (col.closest('#betChips')) this.onBetTap(i);
+        else if (col.closest('.my-bet')) this.onBetTap(i);
         return;
       }
       const cs = e.target.closest('[data-count-seat]');

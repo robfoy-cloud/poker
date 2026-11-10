@@ -220,6 +220,23 @@ function formatClaude(t) {
 // ---------- start ----------
 checkClaude();
 
+// ---------- phone layout ----------
+// On phones the instructions sit at the top of the coach panel so both stay in view.
+const narrow = window.matchMedia('(max-width: 899px)');
+function placePrompt() {
+  const prompt = $('prompt');
+  if (narrow.matches) document.querySelector('.coach-head').after(prompt);
+  else document.querySelector('.me-panel').prepend(prompt);
+}
+narrow.addEventListener('change', placePrompt);
+placePrompt();
+$('expandBtn').onclick = () => {
+  const on = document.querySelector('.coach-panel').classList.toggle('expanded');
+  $('expandBtn').setAttribute('aria-pressed', on);
+  $('expandBtn').textContent = on ? '⤡' : '⤢';
+  const log = $('coachLog'); log.scrollTop = log.scrollHeight;
+};
+
 // ---------- updates ----------
 // The app knows its own version; version.json on the server says what's newest.
 async function latestVersion() {

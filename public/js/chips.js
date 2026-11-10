@@ -53,7 +53,7 @@ export function breakChip(counts, i) {
 // HTML for chips seen edge-on: one column per colour, chips stacked up.
 // size: 'lg' | 'md' | 'sm'
 export function chipsHTML(counts, { size = 'md', interactive = false, maxPerColumn = 20, attr = '' } = {}) {
-  let html = `<div class="chips chips-${size}" ${attr}>`;
+  let html = attr.startsWith('class=') ? `<div ${attr}>` : `<div class="chips chips-${size}" ${attr}>`;
   counts.forEach((n, i) => {
     if (!n) return;
     const d = DENOMS[i];

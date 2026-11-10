@@ -45,6 +45,7 @@
         <div id="seats"></div>
         <div id="dealerBtn" class="dealer-btn" hidden>D</div>
       </div>
+      <button id="chipKey" class="chip-key" aria-label="Chip values"></button>
     </section>
 
     <section class="me-panel">
@@ -57,7 +58,7 @@
         </div>
       </div>
       <div class="bet-row">
-        <div class="stack-label">Chips going in</div>
+        <div class="stack-label">Your bet</div>
         <div id="myBet" class="bet-area"></div>
       </div>
       <div id="actions" class="actions"></div>
@@ -67,7 +68,9 @@
       <div class="coach-head">
         <span>Coach</span>
         <div class="coach-tools">
-          <button id="askBtn" class="small">Ask a question</button>
+          <button id="stepBtn" class="small toggle">Step: off</button>
+          <button id="oddsBtn" class="small">Hands &amp; odds</button>
+          <button id="askBtn" class="small">Ask</button>
         </div>
       </div>
       <div id="coachLog" class="coach-log" aria-live="polite"></div>
@@ -81,7 +84,7 @@
       <h2>Menu</h2>
       <button class="menu-item" id="mNew">New game / settings</button>
       <button class="menu-item" id="mGloss">Glossary of poker jargon</button>
-      <button class="menu-item" id="mRanks">Hand rankings</button>
+      <button class="menu-item" id="mRanks">Hand rankings &amp; odds</button>
       <button class="menu-item" id="mChips">Chip values</button>
       <button class="menu-item" id="mRules">How a hand works</button>
     </div>
@@ -123,6 +126,7 @@
           <option value="350">Fast</option>
         </select>
       </label>
+      <label class="check"><input type="checkbox" id="stepMode"> Step mode: I press <b>Next move</b> before each opponent acts</label>
       <label class="check"><input type="checkbox" id="showTotals"> Show chip totals as numbers (off = count them yourself)</label>
       <button id="startBtn" class="primary wide">Deal me in</button>
     </div>

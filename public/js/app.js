@@ -9,7 +9,7 @@ import { searchGlossary } from './glossary.js';
 const $ = id => document.getElementById(id);
 const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
 
-const DEFAULTS = { players: 6, stack: 1000, blinds: '5/10', level: 1, speed: 800, showTotals: false };
+const DEFAULTS = { players: 6, stack: 1000, blinds: '5/10', level: 1, speed: 800, showTotals: false, step: false };
 function loadSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('poker.settings') || '{}') }; } catch { return { ...DEFAULTS }; }
 }
@@ -38,8 +38,14 @@ function makeIO(myGen) {
     },
     async botAction(p, ctx, game) {
       if (!live()) return never();
-      ui.setPrompt(`${p.name} is thinking…`, true);
-      await ui.sleep(settings.speed);
+      if (settings.step) {
+        const pos = game.positions()[p.seat];
+        await ui.waitContinue('Next move', `Next to act: <b>${p.name}</b>${pos ? ` (${pos})` : ''}. Tap <b>Next move</b> to see what they do.`);
+        if (!live()) return never();
+      } else {
+        ui.setPrompt(`${p.name} is thinking…`, true);
+        await ui.sleep(settings.speed);
+      }
       if (!live()) return never();
       return botDecide(game, p, ctx);
     },
@@ -52,8 +58,8 @@ function makeIO(myGen) {
       const L = settings.level;
       let prompt;
       if (L === 1) prompt = ctx.canCheck
-        ? `<b>Your turn.</b> Check, or push chips forward to bet. My suggestion is in the coach panel.`
-        : `<b>Your turn.</b> Push the right chips forward to call or raise — or fold. My suggestion is in the coach panel.`;
+        ? `<b>Your turn.</b> Check, or push chips forward to bet. My tip is in the coach panel.`
+        : `<b>Your turn.</b> Push chips forward to call or raise, or fold. My tip is in the coach panel.`;
       else if (L === 2) prompt = `<b>Your turn.</b>`;
       else prompt = `Your move.`;
       if (ctx.warnedFold) prompt = `You can check for free. Press <b>Fold</b> again to fold anyway.`;
@@ -92,7 +98,7 @@ function openSetup() {
   $('nPlayers').value = settings.players; $('nPlayersOut').textContent = settings.players;
   $('startStack').value = settings.stack; $('blinds').value = settings.blinds;
   document.querySelector(`input[name=level][value="${settings.level}"]`).checked = true;
-  $('speed').value = settings.speed; $('showTotals').checked = settings.showTotals;
+  $('speed').value = settings.speed; $('showTotals').checked = settings.showTotals; $('stepMode').checked = settings.step;
   $('setupClose').hidden = !ui.game;
   ui.open('setup');
 }
@@ -104,7 +110,9 @@ $('startBtn').onclick = () => {
   settings.level = +document.querySelector('input[name=level]:checked').value;
   settings.speed = +$('speed').value;
   settings.showTotals = $('showTotals').checked;
+  settings.step = $('stepMode').checked;
   saveSettings(settings);
+  syncStep();
   $('levelSelect').value = settings.level;
   ui.close('setup');
   newGame();
@@ -116,6 +124,17 @@ $('levelSelect').onchange = e => {
   settings.level = +e.target.value; saveSettings(settings);
   ui.coachSay(`Coaching level changed to <b>${['', 'Learn', 'Advise', 'Test'][settings.level]}</b>. It takes effect from the next step.`, 'note');
 };
+function syncStep() {
+  $('stepBtn').textContent = `Step: ${settings.step ? 'on' : 'off'}`;
+  $('stepBtn').classList.toggle('on', settings.step);
+}
+syncStep();
+$('stepBtn').onclick = () => {
+  settings.step = !settings.step; saveSettings(settings); syncStep();
+  ui.coachSay(settings.step ? 'Step mode on: tap <b>Next move</b> to advance each opponent\'s turn.' : 'Step mode off: opponents play at the chosen speed.', 'note');
+};
+$('oddsBtn').onclick = () => ui.showRanks();
+$('chipKey').onclick = () => ui.showChips();
 $('menuBtn').onclick = () => ui.open('menu');
 $('mNew').onclick = () => { ui.close('menu'); openSetup(); };
 $('mGloss').onclick = () => { ui.close('menu'); ui.showGlossary(); };

@@ -26,6 +26,7 @@ export class UI {
     this.highlightTurn = null;
     this.claude = { available: false, passcode: false };
     this.bindStatic();
+    document.getElementById('chipKey').innerHTML = `<span class="key-label">Chip key</span>` + legendHTML(true);
   }
 
   // ---------- text helpers ----------
@@ -76,8 +77,8 @@ export class UI {
     }
   }
 
-  waitContinue(label = 'Continue') {
-    this.setPrompt(label === 'Continue' ? 'Read the coach, then tap <b>Continue</b>.' : 'Hand over. Tap <b>Next hand</b> when you\'re ready.', true);
+  waitContinue(label = 'Continue', prompt) {
+    this.setPrompt(prompt || (label === 'Continue' ? 'Read the coach, then tap <b>Continue</b>.' : 'Hand over. Tap <b>Next hand</b> when you\'re ready.'), true);
     return new Promise(res => {
       this.setActions([{ label: label + ' ▸', cls: 'go', onClick: () => { this.setActions([]); res(); } }]);
     });
@@ -87,7 +88,7 @@ export class UI {
   seatXY(i, n, rFactor = 1) {
     // you sit at the bottom; the next seat clockwise is to your left (screen left), and so on.
     const ang = (Math.PI / 2) + i * (2 * Math.PI / n);
-    const rx = 39 * rFactor, ry = 42 * rFactor;
+    const rx = 40 * rFactor, ry = 40 * rFactor;
     return { x: 50 + rx * Math.cos(ang), y: 50 + ry * Math.sin(ang) };
   }
 
@@ -113,17 +114,19 @@ export class UI {
       }
       const stack = p.isHuman ? '' : `<button class="stack-btn" data-count-seat="${i}" aria-label="Count ${esc(p.name)}'s chips">${chipsHTML(stackComposition(p.stack), { size: 'sm', maxPerColumn: 10 })}</button>`;
       const total = show ? `<span class="total">${p.stack}</span>` : '';
-      const handName = p.shown && p.best ? `<div class="act">${esc(p.best.name)}</div>` : `<div class="act">${esc(p.out ? 'Out' : p.lastAction || '')}</div>`;
+      const act = p.out ? 'Out' : (p.lastAction && p.lastAction !== pos[i] && !(pos[i] || '').endsWith(p.lastAction) ? p.lastAction : '');
+      const handName = p.shown && p.best ? `<div class="act">${esc(p.best.name)}</div>` : '';
       seatsHTML += `<div class="${cls.join(' ')}" data-seat="${i}" style="left:${x}%;top:${y}%">
         <div class="cards">${cards}</div>
-        <div class="plate"><div class="nm">${esc(p.isHuman ? 'You' : p.name)}</div><div class="pos">${pos[i] || ''}</div>${stack}${total}${handName}</div>
+        <div class="plate"><div class="nm">${esc(p.isHuman ? 'You' : p.name)}</div><div class="pos">${pos[i] || ''}${act ? ` <span class="act-inline">${esc(act)}</span>` : ''}</div>${stack}${total}${handName}</div>
       </div>`;
       if (p.bet > 0) {
         const b = this.seatXY(i, n, 0.58);
-        seatsHTML += `<div class="bet-spot" style="left:${b.x}%;top:${b.y}%">${chipsHTML(betComposition(p.bet), { size: 'sm' })}${show ? `<span class="total">${p.bet}</span>` : ''}</div>`;
+        seatsHTML += `<div class="bet-spot" style="left:${b.x}%;top:${b.y}%">${chipsHTML(betComposition(p.bet), { size: 'md' })}${show ? `<span class="total">${p.bet}</span>` : ''}</div>`;
       }
     });
     $('seats').innerHTML = seatsHTML;
+    $('table').classList.toggle('crowded', n >= 7);
 
     const db = $('dealerBtn');
     if (g.button >= 0) {
@@ -195,7 +198,7 @@ export class UI {
       { label: confirmLabel, cls: 'go', onClick: () => this._confirm && this._confirm() },
       { label: 'Clear', onClick: () => this.clearBet() },
       { label: 'All-in', onClick: () => this.pushAll() },
-      { label: 'Make change', cls: 'toggle' + (this.changeMode ? ' on' : ''), onClick: (e) => { this.changeMode = !this.changeMode; e.target.classList.toggle('on', this.changeMode); this.renderMe(); if (this.changeMode) this.coachSay('Change mode: tap a chip column in your stack to swap one chip for the same value in smaller chips ({{make change}}). Tap the button again when done.', 'note'); } },
+      { label: 'Change', cls: 'toggle' + (this.changeMode ? ' on' : ''), onClick: (e) => { this.changeMode = !this.changeMode; e.target.classList.toggle('on', this.changeMode); this.renderMe(); if (this.changeMode) this.coachSay('Change mode: tap a chip column in your stack to swap one chip for the same value in smaller chips ({{make change}}). Tap the button again when done.', 'note'); } },
     ];
   }
 
@@ -275,20 +278,42 @@ export class UI {
 
   showRanks() {
     const C = (r, s) => ({ r, s });
+    // cat index matches evaluate(): 9 = royal flush
     const ex = [
-      ['Royal Flush', 'A-K-Q-J-10, all one suit.', [C(14, 's'), C(13, 's'), C(12, 's'), C(11, 's'), C(10, 's')]],
-      ['Straight Flush', 'Five in a row, all one suit.', [C(9, 'h'), C(8, 'h'), C(7, 'h'), C(6, 'h'), C(5, 'h')]],
-      ['Four of a Kind', 'Also called {{quads}}.', [C(7, 's'), C(7, 'h'), C(7, 'd'), C(7, 'c'), C(13, 'd')]],
-      ['Full House', 'Three of a kind plus a pair: "kings full of fours".', [C(13, 's'), C(13, 'h'), C(13, 'c'), C(4, 'd'), C(4, 's')]],
-      ['Flush', 'Five of one suit, not in a row.', [C(14, 'd'), C(11, 'd'), C(8, 'd'), C(6, 'd'), C(2, 'd')]],
-      ['Straight', 'Five in a row, mixed suits. A-2-3-4-5 is the {{wheel}}.', [C(10, 'c'), C(9, 'd'), C(8, 's'), C(7, 'h'), C(6, 'c')]],
-      ['Three of a Kind', 'A {{set}} if you hold a pocket pair, {{trips}} if two are on the board.', [C(12, 's'), C(12, 'h'), C(12, 'd'), C(9, 'c'), C(3, 's')]],
-      ['Two Pair', 'Two different pairs.', [C(11, 'h'), C(11, 'c'), C(5, 's'), C(5, 'd'), C(14, 'h')]],
-      ['One Pair', 'Ties are broken by the {{kicker}}.', [C(10, 's'), C(10, 'h'), C(14, 'c'), C(8, 'd'), C(4, 'h')]],
-      ['High Card', 'Nothing else — highest card wins.', [C(14, 's'), C(12, 'd'), C(9, 'h'), C(6, 'c'), C(3, 'd')]],
+      [9, 'Royal Flush', 'A-K-Q-J-10, all one suit.', [C(14, 's'), C(13, 's'), C(12, 's'), C(11, 's'), C(10, 's')], '0.003%', '1 in 30,940'],
+      [8, 'Straight Flush', 'Five in a row, all one suit.', [C(9, 'h'), C(8, 'h'), C(7, 'h'), C(6, 'h'), C(5, 'h')], '0.03%', '1 in 3,590'],
+      [7, 'Four of a Kind', 'Also called {{quads}}.', [C(7, 's'), C(7, 'h'), C(7, 'd'), C(7, 'c'), C(13, 'd')], '0.17%', '1 in 595'],
+      [6, 'Full House', 'Three of a kind plus a pair: "kings full of fours".', [C(13, 's'), C(13, 'h'), C(13, 'c'), C(4, 'd'), C(4, 's')], '2.6%', '1 in 38'],
+      [5, 'Flush', 'Five of one suit, not in a row.', [C(14, 'd'), C(11, 'd'), C(8, 'd'), C(6, 'd'), C(2, 'd')], '3.0%', '1 in 33'],
+      [4, 'Straight', 'Five in a row, mixed suits. A-2-3-4-5 is the {{wheel}}.', [C(10, 'c'), C(9, 'd'), C(8, 's'), C(7, 'h'), C(6, 'c')], '4.6%', '1 in 22'],
+      [3, 'Three of a Kind', 'A {{set}} with a pocket pair, {{trips}} with a pair on the board.', [C(12, 's'), C(12, 'h'), C(12, 'd'), C(9, 'c'), C(3, 's')], '4.8%', '1 in 21'],
+      [2, 'Two Pair', 'Two different pairs.', [C(11, 'h'), C(11, 'c'), C(5, 's'), C(5, 'd'), C(14, 'h')], '23.5%', '1 in 4.3'],
+      [1, 'One Pair', 'Ties are broken by the {{kicker}}.', [C(10, 's'), C(10, 'h'), C(14, 'c'), C(8, 'd'), C(4, 'h')], '43.8%', '1 in 2.3'],
+      [0, 'High Card', 'Nothing else — highest card wins.', [C(14, 's'), C(12, 'd'), C(9, 'h'), C(6, 'c'), C(3, 'd')], '17.4%', '1 in 5.7'],
     ];
-    this.info(`<h2>Hand rankings (best first)</h2><p class="muted">Your hand is the best five cards from your two hole cards plus the five on the board.</p><ul class="ranks">` +
-      ex.map(([n, d, cs]) => `<li><b>${n}</b> — ${d}<div class="ex">${cs.map(c => cardHTML(c, 'sm')).join('')}</div></li>`).join('') + `</ul>`);
+    let mine = -1;
+    const me = this.game && this.game.human();
+    if (me && me.hole.length && !me.folded && this.game.board.length >= 3) {
+      const e = evaluate([...me.hole, ...this.game.board]);
+      mine = e.cat === 8 && e.kickers[0] === 14 ? 9 : e.cat;
+    }
+    this.info(`<h2>Hand rankings &amp; odds</h2>
+      <p class="muted">Best first. "Odds" is how often you end up with that hand using all seven cards (your two plus the five on the board) if you stay to the river.</p>
+      <table class="ranks-table"><thead><tr><th>Hand</th><th>Odds</th></tr></thead><tbody>` +
+      ex.map(([cat, n, d, cs, pct, one]) => `<tr class="${cat === mine ? 'mine' : ''}"><td><b>${n}</b>${cat === mine ? ' <span class="you-tag">your hand now</span>' : ''}<div class="muted">${d}</div><div class="ex">${cs.map(c => cardHTML(c, 'sm')).join('')}</div></td><td class="odds"><b>${pct}</b><div class="muted">${one}</div></td></tr>`).join('') +
+      `</tbody></table>
+      <h3>Handy odds</h3>
+      <table class="odds-table"><tbody>
+        <tr><td>Dealt a {{pocket pair}}</td><td>1 in 17 (5.9%)</td></tr>
+        <tr><td>Dealt {{pocket rockets}} (A-A)</td><td>1 in 221</td></tr>
+        <tr><td>Dealt {{suited}} cards</td><td>1 in 4 (24%)</td></tr>
+        <tr><td>Pocket pair makes a {{set}} on the flop</td><td>1 in 8.5 (12%)</td></tr>
+        <tr><td>{{flush draw|Flush draw}} on the flop hits by the river (9 {{outs}})</td><td>35%</td></tr>
+        <tr><td>{{open-ended straight draw|Open-ended straight draw}} hits by the river (8 outs)</td><td>32%</td></tr>
+        <tr><td>{{gutshot|Gutshot}} hits by the river (4 outs)</td><td>17%</td></tr>
+        <tr><td>Any draw, one card to come</td><td>outs × 2 %</td></tr>
+        <tr><td>Any draw, two cards to come</td><td>outs × 4 % ({{rule of 2 and 4}})</td></tr>
+      </tbody></table>`);
   }
 
   showChips() {

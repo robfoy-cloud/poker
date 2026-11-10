@@ -72,8 +72,8 @@ export function chipsHTML(counts, { size = 'md', interactive = false, maxPerColu
   return html;
 }
 
-export function legendHTML() {
+export function legendHTML(compact = false) {
   return `<div class="legend">` + DENOMS.map(d =>
-    `<span class="legend-item"><span class="chip chip-face" style="--c:${d.color};--e:${d.edge}"></span>${d.name} = ${d.v}</span>`
+    `<span class="legend-item" title="${d.name}"><span class="chip chip-face" style="--c:${d.color};--e:${d.edge}"></span>${compact ? d.v : `${d.name} = ${d.v}`}</span>`
   ).join('') + `</div>`;
 }

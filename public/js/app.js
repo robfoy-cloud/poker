@@ -256,10 +256,20 @@ function showTicker(kind, html) {
   t.className = 'ticker k-' + kind;
   t.hidden = false;
   // it starts clear to read, then fades back so the table shows through
-  clearTimeout(tickerFade);
-  tickerFade = setTimeout(() => t.classList.add('faded'), kind === 'mistake' ? 9000 : 5000);
+  t.classList.remove('faded');
+  scheduleFade(kind);
 }
-$('ticker').addEventListener('click', e => { if (!e.target.closest('.term')) openDrawer(); });
+function scheduleFade(kind) {
+  clearTimeout(tickerFade);
+  tickerFade = setTimeout(() => $('ticker').classList.add('faded'), kind === 'mistake' ? 20000 : 12000);
+}
+// Tap a faded message to bring it back; tap it again (while clear) to open the coach panel.
+$('ticker').addEventListener('click', e => {
+  if (e.target.closest('.term')) return;
+  const t = $('ticker');
+  if (t.classList.contains('faded')) { t.classList.remove('faded'); scheduleFade(t.classList.contains('k-mistake') ? 'mistake' : ''); }
+  else openDrawer();
+});
 ui.onCoachMessage = (kind, html) => {
   if (kind !== 'q') showTicker(kind, html);
   if (!narrow.matches || panel.classList.contains('open')) return;

@@ -444,3 +444,14 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .sd-player.picked.lost { border-color: var(--oxblood); background: #f8e9ea; box-shadow: none; }
 .sd-player.picked.lost .sd-place { color: var(--oxblood); }
 .sd-player.won.picked { box-shadow: 0 0 0 3px rgba(60,157,104,.25); }
+
+/* update banner */
+.update-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 12px; background: #fbf4e2; border-bottom: 1px solid var(--brass); font-size: 15px; font-weight: 600; color: #4d3a10;
+}
+.update-bar[hidden] { display: none; }
+.update-bar span { flex: 1 1 auto; min-width: 0; }
+.update-bar { flex-wrap: nowrap; }
+.update-bar button { border: 1px solid var(--baize-deep); background: var(--baize); color: var(--ivory); border-radius: 999px; padding: 6px 14px; font-weight: 700; }
+.update-bar .later { background: transparent; color: #4d3a10; border-color: rgba(77,58,16,.35); }

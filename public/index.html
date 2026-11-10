@@ -28,6 +28,12 @@
     </div>
   </header>
 
+  <div id="updateBar" class="update-bar" hidden role="status">
+    <span>A new version is ready.</span>
+    <button id="updateBtn">Update now</button>
+    <button id="updateLater" class="later" aria-label="Later">Later</button>
+  </div>
+
   <main class="layout">
     <section class="table-wrap">
       <div id="table" class="table">
@@ -93,6 +99,8 @@
       <button class="menu-item" id="mRanks">Hand rankings &amp; odds</button>
       <button class="menu-item" id="mChips">Chip values</button>
       <button class="menu-item" id="mRules">How a hand works</button>
+      <button class="menu-item" id="mUpdate">Check for updates</button>
+      <p class="muted" id="versionLabel" style="text-align:center;margin:10px 0 0"></p>
     </div>
   </div>
 

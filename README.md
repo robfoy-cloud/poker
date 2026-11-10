@@ -27,6 +27,9 @@ The repo is set up as a Cloudflare Worker with static assets: `wrangler.toml` se
 
 Every push to `main` redeploys automatically.
 
+### Updates
+The app compares its own version (`public/js/version.js`) with `public/version.json` on the server whenever it's opened or brought back to the front, and every 30 minutes. If they differ it shows **"A new version is ready — Update now"**. Run `npm run bump` before committing a change so both files get a new version stamp. The menu also has **Check for updates**.
+
 ## Running locally
 
 ```

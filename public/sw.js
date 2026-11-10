@@ -1,10 +1,10 @@
 // Offline support. On install, every file the game needs is saved, so it works
 // offline after a single visit. When online, the newest version is always
 // fetched first and the saved copy is refreshed.
-const CACHE = 'holdem-v4';
+const CACHE = 'holdem-v5';
 const FILES = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
-  'js/app.js', 'js/engine.js', 'js/cards.js', 'js/ai.js', 'js/coach.js', 'js/ui.js', 'js/chips.js', 'js/glossary.js', 'js/trainer.js', 'js/showdown.js', 'js/handranks.js',
+  'js/app.js', 'js/engine.js', 'js/cards.js', 'js/ai.js', 'js/coach.js', 'js/ui.js', 'js/chips.js', 'js/glossary.js', 'js/trainer.js', 'js/showdown.js', 'js/version.js', 'js/handranks.js',
   'fonts/limelight.woff2', 'fonts/source-sans-400.woff2', 'fonts/source-sans-600.woff2', 'fonts/source-sans-700.woff2',
   'icons/icon.svg', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
 ];

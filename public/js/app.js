@@ -7,6 +7,7 @@ import { botDecide, STYLES } from './ai.js';
 import { searchGlossary } from './glossary.js';
 import { Trainer } from './trainer.js';
 import { ShowdownTrainer } from './showdown.js';
+import { APP_VERSION } from './version.js';
 
 const $ = id => document.getElementById(id);
 const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
@@ -218,6 +219,51 @@ function formatClaude(t) {
 
 // ---------- start ----------
 checkClaude();
+
+// ---------- updates ----------
+// The app knows its own version; version.json on the server says what's newest.
+async function latestVersion() {
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (r.ok) return (await r.json()).version;
+  } catch {}
+  return null;
+}
+async function checkForUpdate(manual = false) {
+  const v = await latestVersion();
+  if (v && v !== APP_VERSION) {
+    $('updateBar').hidden = false;
+    if (manual) ui.close('menu');
+  } else if (manual) {
+    $('versionLabel').textContent = v ? `You're on the latest version (${APP_VERSION}).` : `Couldn't check — are you offline? Version ${APP_VERSION}.`;
+  }
+}
+async function applyUpdate() {
+  $('updateBtn').disabled = true; $('updateBtn').textContent = 'Updating…';
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) await reg.update();
+    for (const k of await caches.keys()) await caches.delete(k);
+  } catch {}
+  location.reload();
+}
+$('updateBtn').onclick = () => {
+  if (ui.game && !ui.game.over && !confirmUpdate()) return;
+  applyUpdate();
+};
+function confirmUpdate() {
+  // Updating restarts the app, so a game in progress would end.
+  if ($('updateBtn').dataset.armed) return true;
+  $('updateBtn').dataset.armed = '1';
+  $('updateBtn').textContent = 'Tap again to end game & update';
+  return false;
+}
+$('updateLater').onclick = () => { $('updateBar').hidden = true; };
+$('mUpdate').onclick = () => checkForUpdate(true);
+$('versionLabel').textContent = `Version ${APP_VERSION}`;
+checkForUpdate();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+setInterval(checkForUpdate, 30 * 60 * 1000);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 ui.coachSay(`Welcome! I'll teach you Texas Hold'em and its jargon at a real-feeling table. Words like {{flop}} and {{kicker}} are tappable. Press <b>Deal me in</b> to choose your table.`, 'note');
 openSetup();

@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node test/sim.mjs",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "bump": "node tools/bump-version.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

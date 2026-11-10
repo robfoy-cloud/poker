@@ -522,3 +522,28 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
   .chip-key { display: none; }
   .coach-panel { height: 26dvh; min-height: 130px; }
 }
+
+/* latest coach message over the top of the table (phones) */
+.ticker { display: none; }
+@media (max-width: 899px) {
+  .table-wrap { position: relative; }
+  .ticker {
+    display: block; position: absolute; z-index: 6; left: 8px; right: 8px; top: 6px;
+    text-align: left; font: 500 14.5px/1.38 "Source Sans 3", sans-serif; color: var(--ivory);
+    padding: 7px 11px; border-radius: 12px; border: 1px solid rgba(227,199,127,.45);
+    background: rgba(14, 38, 30, .78); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    box-shadow: 0 4px 14px rgba(0,0,0,.25);
+    transition: opacity .6s ease, background-color .6s ease;
+    animation: tickerIn .25s ease-out;
+  }
+  .ticker[hidden] { display: none; }
+  .ticker .tk-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .ticker.faded { opacity: .62; background: rgba(14, 38, 30, .55); }
+  .ticker b { color: var(--brass-soft); }
+  .ticker .term { color: #bfe5cf; text-decoration-color: rgba(191,229,207,.6); }
+  .ticker.k-mistake { background: rgba(90, 31, 36, .85); border-color: rgba(255,180,180,.5); }
+  .ticker.k-mistake.faded { background: rgba(90, 31, 36, .62); }
+  .ticker.k-advice { border-left: 4px solid var(--brass); }
+}
+@keyframes tickerIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ticker { animation: none; transition: none; } }

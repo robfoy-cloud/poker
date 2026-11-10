@@ -91,6 +91,7 @@ async function newGame() {
   ui.game = game;
   ui.endStaging();
   ui.clearLog();
+  $('ticker').hidden = true;
   ui.setActions([]);
   ui.coachSay(`${settings.name ? `Welcome to the table, ${escapeHTML(settings.name)}. ` : ''}New game: ${settings.players} players, ${settings.stack} chips each, blinds ${sb}/${bb}. Coaching level: <b>${['', 'Learn', 'Advise', 'Test'][settings.level]}</b>. Tap any <button class="term" data-term="pot">underlined word</button> for its meaning. Tap the pot or anyone's chips to practise counting.`, 'note');
   ui.render();
@@ -248,7 +249,19 @@ function updateBadge() {
   tab.classList.toggle('alert', !!ui.alert);
 }
 ui.unread = 0;
-ui.onCoachMessage = (kind) => {
+let tickerFade;
+function showTicker(kind, html) {
+  const t = $('ticker');
+  t.innerHTML = `<span class="tk-text">${html.replace(/<br\s*\/?>/g, ' ')}</span>`;
+  t.className = 'ticker k-' + kind;
+  t.hidden = false;
+  // it starts clear to read, then fades back so the table shows through
+  clearTimeout(tickerFade);
+  tickerFade = setTimeout(() => t.classList.add('faded'), kind === 'mistake' ? 9000 : 5000);
+}
+$('ticker').addEventListener('click', e => { if (!e.target.closest('.term')) openDrawer(); });
+ui.onCoachMessage = (kind, html) => {
+  if (kind !== 'q') showTicker(kind, html);
   if (!narrow.matches || panel.classList.contains('open')) return;
   if (kind === 'note' || kind === 'q') return;
   ui.unread++;

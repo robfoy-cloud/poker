@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hold'em Coach</title>
+  <meta name="theme-color" content="#0f3d2a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hold'em Coach">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img src="icons/icon.svg" alt="" width="26" height="26"><span>Hold'em Coach</span></div>
+    <div class="top-actions">
+      <select id="levelSelect" aria-label="Coaching level">
+        <option value="1">Learn</option>
+        <option value="2">Advise</option>
+        <option value="3">Test</option>
+      </select>
+      <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="table-wrap">
+      <div id="table" class="table">
+        <div class="felt">
+          <div class="center">
+            <div class="board-row">
+              <div id="burn" class="burn" title="Burn cards"></div>
+              <div id="board" class="board"></div>
+            </div>
+            <button id="pot" class="pot" aria-label="The pot — tap to count it">
+              <span class="pot-label">Pot</span>
+              <div id="potChips"></div>
+              <span id="potTotal" class="total"></span>
+            </button>
+          </div>
+        </div>
+        <div id="seats"></div>
+        <div id="dealerBtn" class="dealer-btn" hidden>D</div>
+      </div>
+    </section>
+
+    <section class="me-panel">
+      <div id="prompt" class="prompt">Set up a game to start.</div>
+      <div class="me-row">
+        <div class="me-cards" id="myCards"></div>
+        <div class="me-stack">
+          <div class="stack-label">Your stack <span id="myTotal" class="total"></span></div>
+          <div id="myStack"></div>
+        </div>
+      </div>
+      <div class="bet-row">
+        <div class="stack-label">Chips going in</div>
+        <div id="myBet" class="bet-area"></div>
+      </div>
+      <div id="actions" class="actions"></div>
+    </section>
+
+    <section class="coach-panel">
+      <div class="coach-head">
+        <span>Coach</span>
+        <div class="coach-tools">
+          <button id="askBtn" class="small">Ask a question</button>
+        </div>
+      </div>
+      <div id="coachLog" class="coach-log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <!-- Menu -->
+  <div id="menu" class="sheet" hidden>
+    <div class="sheet-card">
+      <button class="sheet-close" data-close>✕</button>
+      <h2>Menu</h2>
+      <button class="menu-item" id="mNew">New game / settings</button>
+      <button class="menu-item" id="mGloss">Glossary of poker jargon</button>
+      <button class="menu-item" id="mRanks">Hand rankings</button>
+      <button class="menu-item" id="mChips">Chip values</button>
+      <button class="menu-item" id="mRules">How a hand works</button>
+    </div>
+  </div>
+
+  <!-- Setup -->
+  <div id="setup" class="sheet" hidden>
+    <div class="sheet-card">
+      <button class="sheet-close" data-close id="setupClose">✕</button>
+      <h2>New game</h2>
+      <label class="field">Players at the table (including you): <b id="nPlayersOut">6</b>
+        <input type="range" id="nPlayers" min="2" max="9" value="6">
+      </label>
+      <label class="field">Starting chips each
+        <select id="startStack">
+          <option value="500">500</option>
+          <option value="1000" selected>1,000</option>
+          <option value="1500">1,500</option>
+          <option value="2000">2,000</option>
+        </select>
+      </label>
+      <label class="field">Blinds (small / big)
+        <select id="blinds">
+          <option value="5/10" selected>5 / 10</option>
+          <option value="10/20">10 / 20</option>
+          <option value="25/50">25 / 50</option>
+        </select>
+      </label>
+      <fieldset class="field levels">
+        <legend>Coaching level</legend>
+        <label><input type="radio" name="level" value="1" checked><span><b>Learn</b> — I tell you every step: dealing, burning, who acts first, what I'd do and why.</span></label>
+        <label><input type="radio" name="level" value="2"><span><b>Advise</b> — I explain the flow; ask for advice when you want it.</span></label>
+        <label><input type="radio" name="level" value="3"><span><b>Test</b> — I say nothing unless you make a mistake.</span></label>
+      </fieldset>
+      <label class="field">Opponent speed
+        <select id="speed">
+          <option value="1400">Slow</option>
+          <option value="800" selected>Normal</option>
+          <option value="350">Fast</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="showTotals"> Show chip totals as numbers (off = count them yourself)</label>
+      <button id="startBtn" class="primary wide">Deal me in</button>
+    </div>
+  </div>
+
+  <!-- Generic info sheet -->
+  <div id="info" class="sheet" hidden>
+    <div class="sheet-card">
+      <button class="sheet-close" data-close>✕</button>
+      <div id="infoBody"></div>
+    </div>
+  </div>
+
+  <!-- Term popover -->
+  <div id="termPop" class="termpop" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

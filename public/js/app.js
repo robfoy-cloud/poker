@@ -1,0 +1,187 @@
+// Wires the engine, coach, bots and screen together.
+
+import { Game } from './engine.js';
+import { UI } from './ui.js';
+import { Coach } from './coach.js';
+import { botDecide, STYLES } from './ai.js';
+import { searchGlossary } from './glossary.js';
+
+const $ = id => document.getElementById(id);
+const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
+
+const DEFAULTS = { players: 6, stack: 1000, blinds: '5/10', level: 1, speed: 800, showTotals: false };
+function loadSettings() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('poker.settings') || '{}') }; } catch { return { ...DEFAULTS }; }
+}
+function saveSettings(s) { try { localStorage.setItem('poker.settings', JSON.stringify(s)); } catch {} }
+
+const settings = loadSettings();
+const ui = new UI(settings);
+const coach = new Coach(ui, settings);
+let gen = 0;
+const never = () => new Promise(() => {});
+
+// ---------- the bridge the engine talks to ----------
+function makeIO(myGen) {
+  const live = () => myGen === gen;
+  return {
+    async event(type, d, game) {
+      if (!live()) return never();
+      if (type === 'newHand') { game.winners = null; ui.highlightTurn = null; }
+      if (type === 'turn') ui.highlightTurn = d.seat;
+      if (type === 'roundEnd' || type === 'showdown' || type === 'winUncontested') ui.highlightTurn = null;
+      ui.render();
+      await coach.event(type, d, game);
+      if (!live()) return never();
+      ui.render();
+      if (type === 'dealt' || type === 'collect') await ui.sleep(Math.min(500, settings.speed));
+    },
+    async botAction(p, ctx, game) {
+      if (!live()) return never();
+      ui.setPrompt(`${p.name} is thinking…`, true);
+      await ui.sleep(settings.speed);
+      if (!live()) return never();
+      return botDecide(game, p, ctx);
+    },
+    humanPost(ctx) {
+      if (!live()) return never();
+      return ui.humanPost(ctx, coach.blindPrompt(ctx.which, ctx.amount));
+    },
+    humanAction(ctx, game) {
+      if (!live()) return never();
+      const L = settings.level;
+      let prompt;
+      if (L === 1) prompt = ctx.canCheck
+        ? `<b>Your turn.</b> Check, or push chips forward to bet. My suggestion is in the coach panel.`
+        : `<b>Your turn.</b> Push the right chips forward to call or raise — or fold. My suggestion is in the coach panel.`;
+      else if (L === 2) prompt = `<b>Your turn.</b>`;
+      else prompt = `Your move.`;
+      if (ctx.warnedFold) prompt = `You can check for free. Press <b>Fold</b> again to fold anyway.`;
+      const extra = [];
+      if (L === 2) extra.push({ label: 'Advice', onClick: () => coach.showAdvice() });
+      return ui.humanAction(ctx, prompt, extra);
+    },
+    dealerStep(ctx) {
+      if (!live()) return never();
+      return ui.dealerStep(ctx, coach.dealerPrompt(ctx, ctx.game));
+    },
+  };
+}
+
+async function newGame() {
+  gen++;
+  const myGen = gen;
+  const [sb, bb] = settings.blinds.split('/').map(Number);
+  const styleKeys = Object.keys(STYLES);
+  const names = NAMES.slice().sort(() => Math.random() - 0.5);
+  const players = [{ name: 'You', isHuman: true }];
+  for (let i = 1; i < settings.players; i++) players.push({ name: names[i - 1], style: styleKeys[Math.floor(Math.random() * styleKeys.length)] });
+  const game = new Game({ players, stack: settings.stack, sb, bb }, makeIO(myGen));
+  ui.game = game;
+  ui.endStaging();
+  ui.clearLog();
+  ui.setActions([]);
+  ui.coachSay(`New game: ${settings.players} players, ${settings.stack} chips each, blinds ${sb}/${bb}. Coaching level: <b>${['', 'Learn', 'Advise', 'Test'][settings.level]}</b>. Tap any <button class="term" data-term="pot">underlined word</button> for its meaning. Tap the pot or anyone's chips to practise counting.`, 'note');
+  ui.render();
+  while (!game.over && myGen === gen) await game.playHand();
+  if (myGen === gen) ui.setActions([{ label: 'New game', cls: 'go', onClick: () => openSetup() }]);
+}
+
+// ---------- setup sheet ----------
+function openSetup() {
+  $('nPlayers').value = settings.players; $('nPlayersOut').textContent = settings.players;
+  $('startStack').value = settings.stack; $('blinds').value = settings.blinds;
+  document.querySelector(`input[name=level][value="${settings.level}"]`).checked = true;
+  $('speed').value = settings.speed; $('showTotals').checked = settings.showTotals;
+  $('setupClose').hidden = !ui.game;
+  ui.open('setup');
+}
+$('nPlayers').oninput = e => { $('nPlayersOut').textContent = e.target.value; };
+$('startBtn').onclick = () => {
+  settings.players = +$('nPlayers').value;
+  settings.stack = +$('startStack').value;
+  settings.blinds = $('blinds').value;
+  settings.level = +document.querySelector('input[name=level]:checked').value;
+  settings.speed = +$('speed').value;
+  settings.showTotals = $('showTotals').checked;
+  saveSettings(settings);
+  $('levelSelect').value = settings.level;
+  ui.close('setup');
+  newGame();
+};
+
+// ---------- header + menu ----------
+$('levelSelect').value = settings.level;
+$('levelSelect').onchange = e => {
+  settings.level = +e.target.value; saveSettings(settings);
+  ui.coachSay(`Coaching level changed to <b>${['', 'Learn', 'Advise', 'Test'][settings.level]}</b>. It takes effect from the next step.`, 'note');
+};
+$('menuBtn').onclick = () => ui.open('menu');
+$('mNew').onclick = () => { ui.close('menu'); openSetup(); };
+$('mGloss').onclick = () => { ui.close('menu'); ui.showGlossary(); };
+$('mRanks').onclick = () => { ui.close('menu'); ui.showRanks(); };
+$('mChips').onclick = () => { ui.close('menu'); ui.showChips(); };
+$('mRules').onclick = () => { ui.close('menu'); ui.showRules(); };
+
+// ---------- asking questions (Claude via the Worker, or the built-in glossary) ----------
+async function checkClaude() {
+  try {
+    const r = await fetch('/api/health', { cache: 'no-store' });
+    if (r.ok) Object.assign(ui.claude, await r.json());
+  } catch {}
+}
+
+$('askBtn').onclick = () => {
+  const claude = ui.claude.available;
+  $('infoBody').innerHTML = `<h2>Ask a question</h2>
+    <p class="muted">${claude ? 'Claude will answer using what you can see at the table (never the other players\' hidden cards).' : 'Claude isn\'t connected yet (the Cloudflare Worker needs an API key), so I\'ll search the built-in glossary.'}</p>
+    <textarea id="askQ" rows="3" placeholder="e.g. What's a check-raise? Should I call here?"></textarea>
+    ${claude && ui.claude.passcode ? `<input type="password" id="askPass" placeholder="Passcode" value="${localStorage.getItem('poker.pass') || ''}" style="margin-top:6px">` : ''}
+    <button class="primary wide" id="askGo">Ask</button>`;
+  ui.open('info');
+  $('askQ').focus();
+  $('askGo').onclick = async () => {
+    const q = $('askQ').value.trim();
+    if (!q) return;
+    ui.close('info');
+    ui.coachSay(escapeHTML(q), 'q');
+    if (!claude) return glossaryAnswer(q);
+    const pass = $('askPass') ? $('askPass').value : '';
+    if (pass) localStorage.setItem('poker.pass', pass);
+    ui.coachSay('Thinking…', 'note');
+    try {
+      const r = await fetch('/api/coach', {
+        method: 'POST', headers: { 'content-type': 'application/json', 'x-coach-passcode': pass },
+        body: JSON.stringify({ question: q, state: ui.game ? coach.stateSummary(ui.game) : '(no game in progress)', level: settings.level }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.status);
+      ui.coachSay(formatClaude(j.answer), 'claude');
+    } catch (err) {
+      ui.coachSay(`Couldn't reach Claude (${escapeHTML(String(err.message || err))}). Here's what the glossary says:`, 'note');
+      glossaryAnswer(q);
+    }
+  };
+};
+
+function glossaryAnswer(q) {
+  const words = q.toLowerCase().replace(/[?.!,]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !['what', 'whats', "what's", 'the', 'does', 'mean', 'and', 'how', 'when', 'should', 'is', 'a'].includes(w));
+  const seen = new Set(); const hits = [];
+  for (const phrase of [q.toLowerCase().replace(/[?.!]/g, '').replace(/^what('s| is| does)? (a |an |the )?/, '').replace(/ mean$/, '').trim(), ...words]) {
+    for (const h of searchGlossary(phrase).slice(0, 2)) if (!seen.has(h.term)) { seen.add(h.term); hits.push(h); }
+    if (hits.length >= 3) break;
+  }
+  if (!hits.length) ui.coachSay(`I couldn't find that in the glossary. Try a single word, like "kicker" or "flop".`, 'note');
+  else ui.coachSay(hits.slice(0, 3).map(h => `<b style="text-transform:capitalize">${escapeHTML(h.term)}</b> — ${escapeHTML(h.def)}`).join('<br>'), 'advice');
+}
+
+function escapeHTML(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function formatClaude(t) {
+  return escapeHTML(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+}
+
+// ---------- start ----------
+checkClaude();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+ui.coachSay(`Welcome! I'll teach you Texas Hold'em and its jargon at a real-feeling table. Words like {{flop}} and {{kicker}} are tappable. Press <b>Deal me in</b> to choose your table.`, 'note');
+openSetup();

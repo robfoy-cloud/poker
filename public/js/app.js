@@ -259,6 +259,19 @@ ui.onCoachMessage = (kind) => {
   updateBadge();
 };
 tab.onclick = openDrawer;
+// Tap anywhere outside the drawer to close it. A tap on the table only closes the drawer
+// (so you don't hit a seat or the pot by accident); taps on your cards and buttons still work.
+let swallowClick = false;
+document.addEventListener('pointerdown', e => {
+  if (!narrow.matches || !panel.classList.contains('open')) return;
+  const t = e.target;
+  if (panel.contains(t) || tab.contains(t) || t.closest('.sheet') || t.closest('#termPop')) return;
+  closeDrawer();
+  swallowClick = !!t.closest('.table-wrap');
+}, true);
+document.addEventListener('click', e => {
+  if (swallowClick) { swallowClick = false; e.stopPropagation(); e.preventDefault(); }
+}, true);
 $('drawerClose').onclick = closeDrawer;
 // swipe the drawer to the right to close it, or swipe the tab to the left to open it
 let sx = null, sy = null;

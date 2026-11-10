@@ -5,11 +5,12 @@ import { UI } from './ui.js';
 import { Coach } from './coach.js';
 import { botDecide, STYLES } from './ai.js';
 import { searchGlossary } from './glossary.js';
+import { Trainer } from './trainer.js';
 
 const $ = id => document.getElementById(id);
 const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
 
-const DEFAULTS = { players: 6, stack: 1000, blinds: '5/10', level: 1, speed: 800, showTotals: false, step: false };
+const DEFAULTS = { players: 6, stack: 1000, blinds: '5/10', level: 1, speed: 800, showTotals: false, step: false, name: '' };
 function loadSettings() {
   try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('poker.settings') || '{}') }; } catch { return { ...DEFAULTS }; }
 }
@@ -18,6 +19,7 @@ function saveSettings(s) { try { localStorage.setItem('poker.settings', JSON.str
 const settings = loadSettings();
 const ui = new UI(settings);
 const coach = new Coach(ui, settings);
+const trainer = new Trainer(ui);
 let gen = 0;
 const never = () => new Promise(() => {});
 
@@ -79,15 +81,15 @@ async function newGame() {
   const myGen = gen;
   const [sb, bb] = settings.blinds.split('/').map(Number);
   const styleKeys = Object.keys(STYLES);
-  const names = NAMES.slice().sort(() => Math.random() - 0.5);
-  const players = [{ name: 'You', isHuman: true }];
+  const names = NAMES.filter(n => n.toLowerCase() !== (settings.name || '').toLowerCase()).sort(() => Math.random() - 0.5);
+  const players = [{ name: settings.name || 'You', isHuman: true }];
   for (let i = 1; i < settings.players; i++) players.push({ name: names[i - 1], style: styleKeys[Math.floor(Math.random() * styleKeys.length)] });
   const game = new Game({ players, stack: settings.stack, sb, bb }, makeIO(myGen));
   ui.game = game;
   ui.endStaging();
   ui.clearLog();
   ui.setActions([]);
-  ui.coachSay(`New game: ${settings.players} players, ${settings.stack} chips each, blinds ${sb}/${bb}. Coaching level: <b>${['', 'Learn', 'Advise', 'Test'][settings.level]}</b>. Tap any <button class="term" data-term="pot">underlined word</button> for its meaning. Tap the pot or anyone's chips to practise counting.`, 'note');
+  ui.coachSay(`${settings.name ? `Welcome to the table, ${escapeHTML(settings.name)}. ` : ''}New game: ${settings.players} players, ${settings.stack} chips each, blinds ${sb}/${bb}. Coaching level: <b>${['', 'Learn', 'Advise', 'Test'][settings.level]}</b>. Tap any <button class="term" data-term="pot">underlined word</button> for its meaning. Tap the pot or anyone's chips to practise counting.`, 'note');
   ui.render();
   while (!game.over && myGen === gen) await game.playHand();
   if (myGen === gen) ui.setActions([{ label: 'New game', cls: 'go', onClick: () => openSetup() }]);
@@ -95,6 +97,7 @@ async function newGame() {
 
 // ---------- setup sheet ----------
 function openSetup() {
+  $('playerName').value = settings.name || '';
   $('nPlayers').value = settings.players; $('nPlayersOut').textContent = settings.players;
   $('startStack').value = settings.stack; $('blinds').value = settings.blinds;
   document.querySelector(`input[name=level][value="${settings.level}"]`).checked = true;
@@ -104,6 +107,7 @@ function openSetup() {
 }
 $('nPlayers').oninput = e => { $('nPlayersOut').textContent = e.target.value; };
 $('startBtn').onclick = () => {
+  settings.name = $('playerName').value.trim().slice(0, 14);
   settings.players = +$('nPlayers').value;
   settings.stack = +$('startStack').value;
   settings.blinds = $('blinds').value;
@@ -134,6 +138,8 @@ $('stepBtn').onclick = () => {
   ui.coachSay(settings.step ? 'Step mode on: tap <b>Next move</b> to advance each opponent\'s turn.' : 'Step mode off: opponents play at the chosen speed.', 'note');
 };
 $('oddsBtn').onclick = () => ui.showRanks();
+$('trainBtn').onclick = () => trainer.open();
+$('mTrain').onclick = () => { ui.close('menu'); trainer.open(); };
 $('chipKey').onclick = () => ui.showChips();
 $('menuBtn').onclick = () => ui.open('menu');
 $('mNew').onclick = () => { ui.close('menu'); openSetup(); };

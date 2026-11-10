@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Hold'em Coach</title>
-  <meta name="theme-color" content="#0f3d2a">
+  <meta name="theme-color" content="#123d30">
+  <link rel="preload" href="fonts/limelight.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hold'em Coach">
@@ -17,6 +18,7 @@
   <header class="topbar">
     <div class="brand"><img src="icons/icon.svg" alt="" width="26" height="26"><span>Hold'em Coach</span></div>
     <div class="top-actions">
+      <button id="trainBtn" class="pill">Trainer</button>
       <select id="levelSelect" aria-label="Coaching level">
         <option value="1">Learn</option>
         <option value="2">Advise</option>
@@ -30,7 +32,9 @@
     <section class="table-wrap">
       <div id="table" class="table">
         <div class="felt">
+          <div class="felt-line"></div>
           <div class="center">
+            <div class="felt-mark">Hold'em Coach</div>
             <div class="board-row">
               <div id="burn" class="burn" title="Burn cards"></div>
               <div id="board" class="board"></div>
@@ -84,6 +88,7 @@
       <h2>Menu</h2>
       <button class="menu-item" id="mNew">New game / settings</button>
       <button class="menu-item" id="mGloss">Glossary of poker jargon</button>
+      <button class="menu-item" id="mTrain">Starting-hand trainer (Chen score)</button>
       <button class="menu-item" id="mRanks">Hand rankings &amp; odds</button>
       <button class="menu-item" id="mChips">Chip values</button>
       <button class="menu-item" id="mRules">How a hand works</button>
@@ -95,6 +100,9 @@
     <div class="sheet-card">
       <button class="sheet-close" data-close id="setupClose">✕</button>
       <h2>New game</h2>
+      <label class="field">Your name
+        <input type="text" id="playerName" maxlength="14" autocomplete="given-name" placeholder="You">
+      </label>
       <label class="field">Players at the table (including you): <b id="nPlayersOut">6</b>
         <input type="range" id="nPlayers" min="2" max="9" value="6">
       </label>
@@ -126,8 +134,8 @@
           <option value="350">Fast</option>
         </select>
       </label>
-      <label class="check"><input type="checkbox" id="stepMode"> Step mode: I press <b>Next move</b> before each opponent acts</label>
-      <label class="check"><input type="checkbox" id="showTotals"> Show chip totals as numbers (off = count them yourself)</label>
+      <label class="check"><input type="checkbox" id="stepMode"><span>Step mode: I press <b>Next move</b> before each opponent acts</span></label>
+      <label class="check"><input type="checkbox" id="showTotals"><span>Show chip totals as numbers (off = count them yourself)</span></label>
       <button id="startBtn" class="primary wide">Deal me in</button>
     </div>
   </div>

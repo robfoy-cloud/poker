@@ -161,3 +161,32 @@ export function chenScore(h) {
   }
   return Math.ceil(s);
 }
+
+// The Chen formula step by step, for teaching. Returns { steps, raw, total }.
+export function chenSteps(h) {
+  const [a, b] = h[0].r >= h[1].r ? h : [h[1], h[0]];
+  const base = { 14: 10, 13: 8, 12: 7, 11: 6 };
+  const steps = [];
+  let s = base[a.r] || a.r / 2;
+  steps.push({ label: 'Score your highest card', detail: base[a.r] ? `${RANK_NAME[a.r]} = ${s}` : `${RANK_NAME[a.r]}: half its value, ${a.r} ÷ 2`, value: s, kind: 'set' });
+  const pair = a.r === b.r;
+  if (pair) {
+    const doubled = Math.max(5, s * 2);
+    steps.push({ label: 'Pair? Double it', detail: s * 2 < 5 ? `${s} × 2 = ${s * 2}, but a pair is worth at least 5` : `${s} × 2`, value: doubled - s, kind: 'add' });
+    s = doubled;
+  } else steps.push({ label: 'Pair? Double it', detail: 'Not a pair', value: 0, kind: 'skip' });
+  if (a.s === b.s) { steps.push({ label: 'Suited? Add 2', detail: `Both ${SUIT_NAME[a.s]}`, value: 2, kind: 'add' }); s += 2; }
+  else steps.push({ label: 'Suited? Add 2', detail: 'Different suits', value: 0, kind: 'skip' });
+  if (!pair) {
+    const gap = a.r - b.r - 1;
+    const pen = gap === 0 ? 0 : gap === 1 ? 1 : gap === 2 ? 2 : gap === 3 ? 4 : 5;
+    steps.push({ label: 'Gap between the cards', detail: gap === 0 ? 'No gap — they are connected' : `${gap} card${gap > 1 ? 's' : ''} missing between them`, value: -pen, kind: pen ? 'add' : 'skip' });
+    s -= pen;
+    if (gap <= 1 && a.r < 12) { steps.push({ label: 'Straight bonus', detail: 'Gap of 0 or 1 and both cards below a queen', value: 1, kind: 'add' }); s += 1; }
+    else steps.push({ label: 'Straight bonus', detail: gap > 1 ? 'Gap too big' : 'A card is queen or higher', value: 0, kind: 'skip' });
+  } else {
+    steps.push({ label: 'Gap between the cards', detail: 'Not used for pairs', value: 0, kind: 'skip' });
+  }
+  const total = Math.ceil(s);
+  return { steps, raw: s, total, rounded: total !== s };
+}

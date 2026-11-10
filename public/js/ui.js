@@ -1,6 +1,6 @@
 // Everything on screen: table, chips, your controls, the coach log and the side sheets.
 
-import { RANK_CHAR, SUIT_SYMBOL, evaluate } from './cards.js';
+import { RANK_CHAR, SUIT_SYMBOL, SUIT_NAME, RANK_NAME, evaluate } from './cards.js';
 import { stackComposition, betComposition, chipsHTML, totalOf, breakChip, DENOMS, legendHTML } from './chips.js';
 import { lookup, searchGlossary, GLOSSARY } from './glossary.js';
 
@@ -10,7 +10,8 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 export function cardHTML(c, size = '') {
   if (!c) return `<span class="card slot ${size}"></span>`;
   const red = c.s === 'h' || c.s === 'd';
-  return `<span class="card ${size} ${red ? 'red' : ''}">${RANK_CHAR[c.r]}<small>${SUIT_SYMBOL[c.s]}</small></span>`;
+  const sym = SUIT_SYMBOL[c.s] + '\uFE0E'; // text-style suit, never emoji
+  return `<span class="card ${size} ${red ? 'red' : ''}" aria-label="${RANK_NAME[c.r]} of ${SUIT_NAME[c.s]}"><span class="ix">${RANK_CHAR[c.r]}<i>${sym}</i></span><span class="pip">${sym}</span></span>`;
 }
 const backHTML = (size = '') => `<span class="card back ${size}"></span>`;
 
@@ -108,6 +109,7 @@ export class UI {
       if (this.highlightTurn === i) cls.push('turn');
       if (winners.has(i) && !p.out) cls.push('winner');
       if (this.pickSeat && !p.out) cls.push('pickable');
+      if (p.shown && !p.folded && !p.out && !p.isHuman) cls.push('shown');
       let cards = '';
       if (!p.isHuman && !p.out && !p.folded && p.hole.length) {
         cards = p.shown ? p.hole.map(c => cardHTML(c, 'sm')).join('') : p.hole.map(() => backHTML('sm')).join('');
@@ -118,7 +120,7 @@ export class UI {
       const handName = p.shown && p.best ? `<div class="act">${esc(p.best.name)}</div>` : '';
       seatsHTML += `<div class="${cls.join(' ')}" data-seat="${i}" style="left:${x}%;top:${y}%">
         <div class="cards">${cards}</div>
-        <div class="plate"><div class="nm">${esc(p.isHuman ? 'You' : p.name)}</div><div class="pos">${pos[i] || ''}${act ? ` <span class="act-inline">${esc(act)}</span>` : ''}</div>${stack}${total}${handName}</div>
+        <div class="plate"><div class="nm">${esc(p.name)}</div><div class="pos">${pos[i] || ''}${act ? ` <span class="act-inline">${esc(act)}</span>` : ''}</div>${stack}${total}${handName}</div>
       </div>`;
       if (p.bet > 0) {
         const b = this.seatXY(i, n, 0.58);

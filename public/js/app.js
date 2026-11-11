@@ -357,4 +357,38 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 setInterval(checkForUpdate, 30 * 60 * 1000);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 ui.coachSay(`Welcome! I'll teach you Texas Hold'em and its jargon at a real-feeling table. Words like {{flop}} and {{kicker}} are tappable. Press <b>Deal me in</b> to choose your table.`, 'note');
-openSetup();
+
+// ---------- choosing a game ----------
+let chessApp = null;
+function showView(name) {
+  $('home').hidden = name !== 'home';
+  $('pokerView').hidden = name !== 'poker';
+  $('chessView').hidden = name !== 'chess';
+  document.body.dataset.view = name;
+  const theme = document.querySelector('meta[name=theme-color]');
+  if (theme) theme.content = name === 'chess' ? '#22304a' : '#123d30';
+  document.title = name === 'chess' ? 'Chess Coach' : name === 'poker' ? "Hold'em Coach" : 'Game Coach';
+}
+function showHome() {
+  for (const id of ['menu', 'setup', 'info']) ui.close(id);
+  const pokerOn = ui.game && !ui.game.over;
+  $('pokerState').textContent = pokerOn ? 'Game in progress' : '';
+  let chessOn = false;
+  try { const g = JSON.parse(localStorage.getItem('chess.game') || 'null'); chessOn = g && !g.over && g.pgn; } catch {}
+  $('chessState').textContent = chessOn ? 'Game in progress' : '';
+  $('homeTitle').textContent = settings.name ? `What shall we play, ${settings.name}?` : 'What shall we play?';
+  showView('home');
+}
+async function openChess() {
+  if (!chessApp) {
+    const { ChessApp } = await import('./chess/app.js');
+    chessApp = new ChessApp({ settings, ui, onSwitch: showHome, saveSettings: () => saveSettings(settings) });
+  }
+  showView('chess');
+  chessApp.show();
+}
+$('goPoker').onclick = () => { showView('poker'); if (!ui.game) openSetup(); };
+$('goChess').onclick = openChess;
+$('pGames').onclick = showHome;
+$('mSwitch').onclick = () => { ui.close('menu'); showHome(); };
+showHome();

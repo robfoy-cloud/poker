@@ -3,6 +3,7 @@
 import { RANK_CHAR, SUIT_SYMBOL, SUIT_NAME, RANK_NAME, evaluate } from './cards.js';
 import { stackComposition, betComposition, chipsHTML, totalOf, breakChip, DENOMS, legendHTML } from './chips.js';
 import { lookup, searchGlossary, GLOSSARY } from './glossary.js';
+import { lookupChess } from './chess/glossary.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -272,8 +273,8 @@ export class UI {
   close(id) { $(id).hidden = true; }
   info(html) { $('infoBody').innerHTML = this.termify(html); this.open('info'); }
 
-  showTerm(term) {
-    const hit = lookup(term);
+  showTerm(term, ns) {
+    const hit = ns === 'chess' ? lookupChess(term) : lookup(term);
     if (!hit) return;
     const pop = $('termPop');
     pop.innerHTML = `<b>${esc(hit.term)}</b> — ${esc(hit.def)}`;
@@ -381,7 +382,7 @@ export class UI {
   bindStatic() {
     document.addEventListener('click', e => {
       const t = e.target.closest('.term');
-      if (t) { e.preventDefault(); this.showTerm(t.dataset.term); return; }
+      if (t) { e.preventDefault(); this.showTerm(t.dataset.term, t.dataset.ns); return; }
       if (!e.target.closest('#termPop')) $('termPop').hidden = true;
       const close = e.target.closest('[data-close]');
       if (close) { close.closest('.sheet').hidden = true; return; }

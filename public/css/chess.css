@@ -1,0 +1,184 @@
+/* Chess Coach — "the study": navy ink, walnut and boxwood, on pale stone.
+   Shares layout pieces (sheets, drawer, coach messages) with the card room. */
+
+@font-face { font-family: "Cormorant Garamond"; src: url("../fonts/cormorant-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Cormorant Garamond"; src: url("../fonts/cormorant-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+:root {
+  --navy: #22304a;
+  --navy-deep: #18223a;
+  --walnut: #6e4327;
+  --box-light: #efdcb6;
+  --box-dark: #b07d55;
+  --stone: #e7eaee;
+  --teal: #2f6f8f;
+  --gilt: #c8a76a;
+  --serif: "Cormorant Garamond", Georgia, serif;
+}
+
+/* ---------- switching between games ---------- */
+.view { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.view[hidden], .home[hidden] { display: none !important; }
+.brand-btn { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; }
+.brand-btn .chev { font-style: normal; font-size: 13px; color: var(--brass-soft); opacity: .8; margin-left: -2px; }
+
+.home {
+  position: fixed; inset: 0; z-index: 35; overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(29,92,69,.12), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(34,48,74,.14), transparent 55%),
+    #eef0ec;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 24px) 18px calc(env(safe-area-inset-bottom) + 24px);
+}
+.home-inner { width: min(100%, 520px); }
+.home h1 { font-family: var(--serif); font-weight: 700; font-size: 38px; line-height: 1.1; color: #1f2622; margin: 0 0 22px; }
+.game-tile {
+  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
+  border-radius: 20px; padding: 18px; margin: 0 0 14px; border: 0; cursor: pointer;
+  box-shadow: 0 10px 24px rgba(20,28,24,.18);
+  transition: transform .15s ease;
+}
+.game-tile:active { transform: scale(.985); }
+.game-tile img { flex: none; border-radius: 14px; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.gt-text { display: flex; flex-direction: column; gap: 4px; }
+.gt-text b { font-size: 24px; }
+.gt-text span { font-size: 15.5px; line-height: 1.4; opacity: .9; }
+.gt-text em { font-style: normal; font-size: 13px; font-weight: 700; }
+.gt-text em:empty { display: none; }
+.poker-tile { background: radial-gradient(ellipse at 30% 30%, #23704f, var(--baize) 60%, #134432); color: var(--ivory); box-shadow: 0 10px 24px rgba(20,28,24,.2), inset 0 0 0 2px rgba(201,162,74,.55); }
+.poker-tile b { font-family: var(--display); font-weight: 400; color: var(--brass-soft); }
+.poker-tile em { color: var(--brass-soft); }
+.chess-tile { background: linear-gradient(160deg, #2e4366, var(--navy-deep)); color: #f3ead8; box-shadow: 0 10px 24px rgba(20,28,40,.25), inset 0 0 0 2px rgba(200,167,106,.5); }
+.chess-tile b { font-family: var(--serif); font-weight: 700; font-size: 30px; color: var(--box-light); }
+.chess-tile em { color: var(--gilt); }
+.home-foot { color: #5f6b66; font-size: 14.5px; text-align: center; margin-top: 10px; }
+
+/* ---------- chess header ---------- */
+.chess-top { background: var(--navy-deep); border-bottom: 2px solid var(--gilt); }
+.chess-top .brand span { font-family: var(--serif); font-weight: 700; font-size: 25px; color: var(--box-light); letter-spacing: .2px; }
+.chess-top .brand .chev { color: var(--gilt); }
+.chess-top select { color: var(--box-light); border-color: rgba(200,167,106,.6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--gilt) 50%), linear-gradient(135deg, var(--gilt) 50%, transparent 50%); }
+.chess-top .iconbtn { color: var(--box-light); }
+
+/* ---------- chess layout ---------- */
+.view.chess { background: var(--stone); }
+.chess-layout { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.c-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; align-items: stretch; padding: 8px 10px 10px; gap: 6px; overflow-y: auto; }
+@media (min-width: 900px) {
+  .chess-layout { display: grid; grid-template-columns: minmax(480px, 1.25fr) minmax(320px, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .c-coach { min-height: 0; overflow: hidden; }
+  .c-main { padding: 16px 22px; }
+  .c-coach { grid-column: 2; border-left: 1px solid #cfd5dd; }
+  .c-tab, .c-ticker { display: none !important; }
+}
+
+.c-player { display: flex; align-items: center; gap: 8px; width: min(100%, var(--board)); margin: 0 auto; min-height: 30px; }
+.c-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1.5px var(--navy); }
+.c-dot.white { background: #fff; } .c-dot.black { background: #1d1d1d; }
+.c-dot.turn { box-shadow: 0 0 0 1.5px var(--navy), 0 0 0 5px rgba(47,111,143,.35); }
+.c-name { font-weight: 700; font-size: 16px; display: flex; flex-direction: column; line-height: 1.15; }
+.c-name small { font-weight: 400; font-size: 13px; color: #5b6574; }
+.c-caps { margin-left: auto; display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 60%; }
+.c-caps img { width: 18px; height: 18px; margin-left: -5px; }
+.c-caps b { margin-left: 6px; font-size: 14px; color: var(--teal); }
+
+/* the board */
+.chess { --board: min(100%, calc(100dvh - 330px), 640px); }
+@media (min-width: 900px) { .chess { --board: min(100%, calc(100dvh - 310px), 680px); } .c-main { justify-content: center; } }
+.c-board-frame {
+  width: var(--board); margin: 0 auto; padding: 7px; border-radius: 8px;
+  background: linear-gradient(145deg, #8a5a37, var(--walnut) 45%, #4f2e1a);
+  box-shadow: 0 10px 24px rgba(30,24,18,.3), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.c-board {
+  display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+  aspect-ratio: 1; width: 100%; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+}
+.sq { position: relative; cursor: pointer; }
+.sq.light { background: var(--box-light); }
+.sq.dark { background: var(--box-dark); }
+.sq.last::before { content: ""; position: absolute; inset: 0; background: rgba(240, 196, 80, .42); }
+.sq.sel::before { content: ""; position: absolute; inset: 0; background: rgba(47, 111, 143, .5); }
+.sq.incheck::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, rgba(214,40,40,.85) 0%, rgba(214,40,40,.45) 45%, transparent 75%); }
+.sq.dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; transform: translate(-50%, -50%); border-radius: 50%; background: rgba(24, 34, 58, .32); z-index: 3; pointer-events: none; }
+.sq.cap::after { content: ""; position: absolute; inset: 4%; border-radius: 50%; border: 4px solid rgba(24, 34, 58, .38); z-index: 3; pointer-events: none; }
+.pc { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; will-change: transform; }
+.coord { position: absolute; font-size: 10px; font-weight: 700; z-index: 1; pointer-events: none; line-height: 1; }
+.coord.rank { left: 2px; top: 2px; }
+.coord.file { right: 3px; bottom: 2px; }
+.sq.light .coord { color: var(--box-dark); }
+.sq.dark .coord { color: var(--box-light); }
+@media (min-width: 600px) { .coord { font-size: 12px; } }
+
+.c-status {
+  width: min(100%, var(--board)); margin: 2px auto 0; font-size: 15.5px; line-height: 1.35;
+  background: #e1e8f0; border-left: 4px solid var(--teal); padding: 6px 10px; border-radius: 0 8px 8px 0;
+}
+.c-status.wait { border-left-color: #9aa6b4; color: #5b6574; background: #eaedf1; }
+.c-ticker {
+  width: min(100%, var(--board)); margin: 0 auto; text-align: left; cursor: pointer;
+  font: 15px/1.4 "Source Sans 3", sans-serif; color: var(--ink);
+  background: #fff; border: 1px solid #cfd5dd; border-left: 4px solid var(--navy); border-radius: 0 10px 10px 0; padding: 6px 10px;
+}
+.c-ticker[hidden] { display: none; }
+.c-ticker .tk-text { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.c-ticker.k-mistake { border-left-color: #a8323a; background: #fbecec; }
+.c-ticker.k-advice { border-left-color: var(--teal); background: #eef5f8; }
+.c-ticker.k-result { border-left-color: #3c9d68; background: #e8f5ee; font-weight: 600; }
+.c-actions { display: flex; gap: 6px; width: min(100%, var(--board)); margin: 2px auto 0; }
+.c-actions button { flex: 1 1 0; min-width: 0; white-space: nowrap; border: 1px solid #b9c3cf; background: #fff; border-radius: 10px; padding: 10px 4px; font-size: 15.5px; font-weight: 600; }
+.c-actions .danger { color: #8c2a31; border-color: #dcbcbf; }
+.c-actions .go { background: var(--navy); color: #fff; border-color: var(--navy-deep); }
+
+/* coach panel in the study style */
+.chess .coach-panel { background: #f8f9fb; }
+.chess .coach-head { background: #f8f9fb; border-bottom-color: #d5dbe3; }
+.chess .coach-head > span { font-family: var(--serif); font-weight: 700; font-size: 24px; color: var(--navy); }
+.chess .coach-panel { border-left-color: var(--gilt); }
+.chess .msg { background: #eef1f5; }
+.chess .msg.advice { background: #e8f1f6; border-left-color: var(--teal); }
+.chess .msg.action { background: #f1efe9; border-left: 4px solid var(--walnut); border-radius: 0 10px 10px 0; }
+.chess .msg.you { background: #eef1f5; }
+.chess .msg.street { background: #f3ecdf; border-left-color: var(--gilt); }
+.chess .msg.mistake { background: #fbecec; border-left-color: #a8323a; }
+.chess .term { color: var(--teal); text-decoration-color: rgba(47,111,143,.6); }
+.chess .coach-tab { background: linear-gradient(180deg, #2e4366, var(--navy-deep)); color: var(--box-light); box-shadow: -3px 3px 10px rgba(20,28,40,.35), inset 2px 0 0 var(--gilt); }
+.chess .coach-tab .tab-label { font-family: var(--serif); font-weight: 700; font-size: 18px; }
+.chess .coach-tab .badge { background: var(--gilt); color: var(--navy-deep); }
+.chess .coach-tab.alert .badge { background: #e05a5f; color: #fff; }
+.c-tab { top: 30%; }
+
+/* sheets opened from chess */
+.chess-h { font-family: var(--serif) !important; font-weight: 700 !important; color: var(--navy) !important; font-size: 30px !important; }
+body[data-view="chess"] .sheet-card { border-top-color: var(--gilt); }
+body[data-view="chess"] .sheet-card h3 { font-family: var(--serif); font-weight: 700; color: var(--navy); font-size: 22px; }
+body[data-view="chess"] .levels label:has(input:checked) { border-color: var(--navy); background: #eef1f6; }
+body[data-view="chess"] .levels input, body[data-view="chess"] .check input { accent-color: var(--navy); }
+body[data-view="chess"] .gloss-list dt { color: var(--navy); }
+body[data-view="chess"] .termpop { background: var(--navy-deep); box-shadow: 0 0 0 1px var(--gilt), 0 12px 30px rgba(0,0,0,.4); }
+body[data-view="chess"] .termpop b { font-family: var(--serif); font-weight: 700; font-size: 18px; color: var(--box-light); }
+.seg-row { display: flex; gap: 6px; margin-top: 6px; }
+.seg-row .seg { flex: 1; padding: 8px 10px; font-size: 15px; }
+body[data-view="chess"] .seg.on { background: var(--navy); border-color: var(--navy-deep); }
+.chess-primary { background: linear-gradient(180deg, #2e4366, var(--navy)) !important; border-color: var(--navy-deep) !important; }
+.piece-guide { display: flex; flex-direction: column; gap: 10px; }
+.pg-row { display: flex; gap: 12px; align-items: flex-start; }
+.pg-row img { width: 48px; height: 48px; flex: none; background: var(--box-light); border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); }
+
+/* promotion chooser */
+.c-promo { position: fixed; inset: 0; z-index: 45; background: rgba(18,24,36,.5); display: flex; align-items: center; justify-content: center; }
+.c-promo[hidden] { display: none; }
+.c-promo-card { background: #fff; border-radius: 16px; padding: 16px; border-top: 3px solid var(--gilt); }
+.c-promo-card p { margin: 0 0 10px; font-family: var(--serif); font-weight: 700; font-size: 22px; color: var(--navy); }
+.c-promo-card div { display: flex; gap: 8px; }
+.c-promo-card button { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid #cfd5dd; background: var(--box-light); border-radius: 12px; padding: 6px 8px; font-weight: 600; }
+.c-promo-card img { width: 52px; height: 52px; }
+
+@media (max-height: 640px) and (max-width: 899px) {
+  .chess { --board: min(100%, calc(100dvh - 300px)); }
+  .c-ticker { font-size: 14px; }
+  .c-actions button { padding: 8px 4px; }
+}

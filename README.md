@@ -1,4 +1,17 @@
-# Hold'em Coach
+# Game Coach: Hold'em and Chess
+
+The app opens on a menu to choose **Texas Hold'em** or **Chess**; tap the game's name in the header to switch at any time (each game keeps its place).
+
+## Chess
+
+- Play White, Black or random against four opponents: Rookie (for complete beginners), Novice, Club player and Expert.
+- Coaching levels as in poker: **Learn** explains every move (yours and theirs), how each piece moves the first time you pick it up, threats and loose pieces, opening names, and what I'd play and why; **Advise** describes moves and gives hints on request; **Test** says nothing unless you blunder.
+- Illegal moves are explained ("that would leave your king in check", "pawns capture diagonally"…). Blunders are flagged with the reason and a better move, and you can take moves back in Learn and Advise.
+- Glossary of chess words, a pieces guide and the special rules (castling, en passant, promotion, draws).
+- The game is saved on the device, so it survives closing the app or updating.
+- Rules via [chess.js](https://github.com/jhlywa/chess.js) (BSD-2). Piece images: cburnett set by Colin M.L. Burnett (GPLv2+), via lichess. The opponent and analysis are in `public/js/chess/engine.js` (alpha-beta search with piece-square tables).
+
+## Hold'em
 
 A practice table for learning No-Limit Texas Hold'em, with the emphasis on the **jargon**. You sit with 1–8 computer opponents; a coach narrates the game, explains the rules as they happen and checks your play.
 

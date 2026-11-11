@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Hold'em Coach</title>
+  <title>Game Coach</title>
   <meta name="theme-color" content="#123d30">
   <link rel="preload" href="fonts/limelight.woff2" as="font" type="font/woff2" crossorigin>
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,10 +13,18 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/chess.css">
 </head>
 <body>
+  <div id="updateBar" class="update-bar" hidden role="status">
+    <span>A new version is ready.</span>
+    <button id="updateBtn">Update now</button>
+    <button id="updateLater" class="later" aria-label="Later">Later</button>
+  </div>
+
+  <div id="pokerView" class="view" hidden>
   <header class="topbar">
-    <div class="brand"><img src="icons/icon.svg" alt="" width="26" height="26"><span>Hold'em Coach</span></div>
+    <button class="brand brand-btn" id="pGames" aria-label="Switch game"><img src="icons/icon.svg" alt="" width="26" height="26"><span>Hold'em Coach</span><i class="chev">▾</i></button>
     <div class="top-actions">
       <button id="trainBtn" class="pill">Trainer</button>
       <select id="levelSelect" aria-label="Coaching level">
@@ -27,13 +35,6 @@
       <button class="iconbtn" id="menuBtn" aria-label="Menu">☰</button>
     </div>
   </header>
-
-  <div id="updateBar" class="update-bar" hidden role="status">
-    <span>A new version is ready.</span>
-    <button id="updateBtn">Update now</button>
-    <button id="updateLater" class="later" aria-label="Later">Later</button>
-  </div>
-
   <main class="layout">
     <section class="table-wrap">
       <button id="ticker" class="ticker" hidden aria-live="polite" aria-label="Latest coach message — tap to open the coach panel"></button>
@@ -85,6 +86,24 @@
       <div id="coachLog" class="coach-log" aria-live="polite"></div>
     </section>
   </main>
+  </div>
+
+  <div id="chessView" class="view chess" hidden></div>
+
+  <div id="home" class="home" hidden>
+    <div class="home-inner">
+      <h1 id="homeTitle">What shall we play?</h1>
+      <button class="game-tile poker-tile" id="goPoker">
+        <img src="icons/icon.svg" alt="" width="64" height="64">
+        <span class="gt-text"><b>Texas Hold'em</b><span>Learn the game and its jargon at a practice table, with two trainers.</span><em id="pokerState"></em></span>
+      </button>
+      <button class="game-tile chess-tile" id="goChess">
+        <img src="icons/chess.svg" alt="" width="64" height="64">
+        <span class="gt-text"><b>Chess</b><span>Learn from scratch against four levels of opponent, with a coach beside you.</span><em id="chessState"></em></span>
+      </button>
+      <p class="home-foot">You can switch games any time by tapping the game's name at the top.</p>
+    </div>
+  </div>
 
   <!-- Menu -->
   <div id="menu" class="sheet" hidden>
@@ -98,6 +117,7 @@
       <button class="menu-item" id="mRanks">Hand rankings &amp; odds</button>
       <button class="menu-item" id="mChips">Chip values</button>
       <button class="menu-item" id="mRules">How a hand works</button>
+      <button class="menu-item" id="mSwitch">Switch game</button>
       <button class="menu-item" id="mUpdate">Check for updates</button>
       <p class="muted" id="versionLabel" style="text-align:center;margin:10px 0 0"></p>
     </div>

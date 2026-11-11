@@ -315,7 +315,10 @@ narrow.addEventListener('change', () => { if (!narrow.matches) closeDrawer(); })
 // The app knows its own version; version.json on the server says what's newest.
 async function latestVersion() {
   try {
-    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 8000);
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
+    clearTimeout(timer);
     if (r.ok) return (await r.json()).version;
   } catch {}
   return null;
@@ -323,7 +326,7 @@ async function latestVersion() {
 async function checkForUpdate(manual = false) {
   const v = await latestVersion();
   if (v && v !== APP_VERSION) {
-    $('updateBar').hidden = false;
+    showUpdateBar(true);
     if (manual) ui.close('menu');
   } else if (manual) {
     $('versionLabel').textContent = v ? `You're on the latest version (${APP_VERSION}).` : `Couldn't check — are you offline? Version ${APP_VERSION}.`;
@@ -331,12 +334,24 @@ async function checkForUpdate(manual = false) {
 }
 async function applyUpdate() {
   $('updateBtn').disabled = true; $('updateBtn').textContent = 'Updating…';
+  const reload = () => location.reload();
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
-    if (reg) await reg.update();
+    if (reg) {
+      await reg.update();
+      // wait for the new version to finish downloading, then switch to it
+      const sw = reg.waiting || reg.installing;
+      if (sw) {
+        navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true });
+        const go = () => { if (sw.state === 'installed') sw.postMessage('skipWaiting'); };
+        if (sw.state === 'installed') go(); else sw.addEventListener('statechange', go);
+        setTimeout(reload, 15000);
+        return;
+      }
+    }
     for (const k of await caches.keys()) await caches.delete(k);
   } catch {}
-  location.reload();
+  reload();
 }
 $('updateBtn').onclick = () => {
   if (ui.game && !ui.game.over && !confirmUpdate()) return;
@@ -349,7 +364,13 @@ function confirmUpdate() {
   $('updateBtn').textContent = 'Tap again to end game & update';
   return false;
 }
-$('updateLater').onclick = () => { $('updateBar').hidden = true; };
+$('updateLater').onclick = () => showUpdateBar(false);
+// The bar sits above everything, including the game menu, which moves down to make room.
+function showUpdateBar(on) {
+  const bar = $('updateBar');
+  bar.hidden = !on;
+  document.documentElement.style.setProperty('--update-h', on ? bar.offsetHeight + 'px' : '0px');
+}
 $('mUpdate').onclick = () => checkForUpdate(true);
 $('versionLabel').textContent = `Version ${APP_VERSION}`;
 checkForUpdate();

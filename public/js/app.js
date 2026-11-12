@@ -8,6 +8,7 @@ import { searchGlossary } from './glossary.js';
 import { Trainer } from './trainer.js';
 import { ShowdownTrainer } from './showdown.js';
 import { APP_VERSION } from './version.js';
+import { requireSignIn, openAccount } from './auth.js';
 
 const $ = id => document.getElementById(id);
 const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
@@ -403,7 +404,7 @@ function showHome() {
 async function openChess() {
   if (!chessApp) {
     const { ChessApp } = await import('./chess/app.js');
-    chessApp = new ChessApp({ settings, ui, onSwitch: showHome, saveSettings: () => saveSettings(settings) });
+    chessApp = new ChessApp({ settings, ui, onSwitch: showHome, saveSettings: () => saveSettings(settings), openAccount: () => openAccount(ui) });
   }
   showView('chess');
   chessApp.show();
@@ -412,4 +413,7 @@ $('goPoker').onclick = () => { showView('poker'); if (!ui.game) openSetup(); };
 $('goChess').onclick = openChess;
 $('pGames').onclick = showHome;
 $('mSwitch').onclick = () => { ui.close('menu'); showHome(); };
-showHome();
+$('mAccount').onclick = () => { ui.close('menu'); openAccount(ui); };
+$('homeAccount').onclick = () => openAccount(ui);
+// Invite-only: the game menu appears once you're signed in (straight away, offline too, after the first time).
+requireSignIn(showHome);

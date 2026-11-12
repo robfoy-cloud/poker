@@ -501,13 +501,15 @@ export class ChessApp {
       <button class="menu-item" id="cmPieces">How the pieces move</button>
       <button class="menu-item" id="cmRules">Special rules: castling, en passant, promotion</button>
       <button class="menu-item" id="cmGloss">Glossary of chess words</button>
-      <button class="menu-item" id="cmSwitch">Switch game</button>`;
+      <button class="menu-item" id="cmSwitch">Switch game</button>
+      <button class="menu-item" id="cmAccount">Account and who can use the app</button>`;
     ui.open('info');
     $('cmNew').onclick = () => this.setup();
     $('cmPieces').onclick = () => this.piecesGuide();
     $('cmRules').onclick = () => this.rules();
     $('cmGloss').onclick = () => this.glossary();
     $('cmSwitch').onclick = () => { ui.close('info'); this.shared.onSwitch(); };
+    $('cmAccount').onclick = () => this.shared.openAccount();
   }
 
   piecesGuide() {

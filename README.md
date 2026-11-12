@@ -2,6 +2,10 @@
 
 The app opens on a menu to choose **Texas Hold'em** or **Chess**; tap the game's name in the header to switch at any time (each game keeps its place).
 
+## Sign-in (invite-only)
+
+Everyone signs in with a 6-digit code sent by email; there are no passwords and only addresses on the list can get a code. It uses the Learn Spanish Supabase project (like Flightroute); Game Coach's list is the `gc_allowed_emails` table there, so access to one app doesn't give access to another. Admins manage the list in the app: **Menu › Account and who can use the app** (or **Account** on the game menu). After the first sign-in the app opens offline too; the list is checked again whenever it's online, and someone you remove is locked out the next time their app connects. Settings are in `public/js/auth.js`.
+
 ## Chess
 
 - Play White, Black or random against four opponents: Rookie (for complete beginners), Novice, Club player and Expert.

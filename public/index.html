@@ -102,6 +102,7 @@
         <span class="gt-text"><b>Chess</b><span>Learn from scratch against four levels of opponent, with a coach beside you.</span><em id="chessState"></em></span>
       </button>
       <p class="home-foot">You can switch games any time by tapping the game's name at the top.</p>
+      <p class="home-foot"><button class="linkish" id="homeAccount">Account</button></p>
     </div>
   </div>
 
@@ -118,6 +119,7 @@
       <button class="menu-item" id="mChips">Chip values</button>
       <button class="menu-item" id="mRules">How a hand works</button>
       <button class="menu-item" id="mSwitch">Switch game</button>
+      <button class="menu-item" id="mAccount">Account and who can use the app</button>
       <button class="menu-item" id="mUpdate">Check for updates</button>
       <p class="muted" id="versionLabel" style="text-align:center;margin:10px 0 0"></p>
     </div>
@@ -179,6 +181,7 @@
   <!-- Term popover -->
   <div id="termPop" class="termpop" hidden></div>
 
+  <script src="js/vendor/supabase.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

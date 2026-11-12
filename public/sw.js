@@ -4,11 +4,11 @@
 //   (Before, it tried the network first, which can hang for a long time with no signal.)
 // - A new version is downloaded in the background and switched to when you tap
 //   "Update now" (or the next time the app is fully closed and reopened).
-const VERSION = '20261111.1848';
+const VERSION = '20261112.1724';
 const CACHE = 'gamecoach-' + VERSION;
 const FILES = [
   './', 'css/style.css', 'manifest.webmanifest',
-  'js/app.js', 'js/engine.js', 'js/cards.js', 'js/ai.js', 'js/coach.js', 'js/ui.js', 'js/chips.js', 'js/glossary.js', 'js/trainer.js', 'js/showdown.js', 'js/version.js',
+  'js/app.js', 'js/engine.js', 'js/cards.js', 'js/ai.js', 'js/coach.js', 'js/ui.js', 'js/chips.js', 'js/glossary.js', 'js/trainer.js', 'js/showdown.js', 'js/version.js', 'js/auth.js', 'js/vendor/supabase.js',
   'css/chess.css', 'js/chess/app.js', 'js/chess/engine.js', 'js/chess/coach.js', 'js/chess/glossary.js', 'js/vendor/chess.js',
   'icons/chess.svg', 'fonts/cormorant-600.woff2', 'fonts/cormorant-700.woff2',
   ...['w', 'b'].flatMap(c => ['K', 'Q', 'R', 'B', 'N', 'P'].map(p => `pieces/${c}${p}.svg`)), 'js/handranks.js',

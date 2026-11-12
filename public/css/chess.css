@@ -185,3 +185,34 @@ body[data-view="chess"] .seg.on { background: var(--navy); border-color: var(--n
 
 /* the update bar stays tappable above the game menu */
 .update-bar { position: relative; z-index: 36; padding-top: calc(env(safe-area-inset-top) + 8px); }
+
+/* ---------- sign-in ---------- */
+.gate {
+  position: fixed; inset: 0; z-index: 60; overflow-y: auto;
+  display: flex; align-items: center; justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 24px) 18px calc(env(safe-area-inset-bottom) + 24px);
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(29,92,69,.35), transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(34,48,74,.45), transparent 55%),
+    #17201d;
+}
+.gate[hidden] { display: none; }
+.g-card { width: min(100%, 420px); background: #fbfcfa; border-radius: 20px; padding: 22px 20px; box-shadow: 0 20px 50px rgba(0,0,0,.4); border-top: 3px solid var(--brass); }
+.g-icons { display: flex; gap: 10px; margin-bottom: 10px; }
+.g-icons img { border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.g-card h2 { font-family: var(--serif); font-weight: 700; font-size: 32px; line-height: 1.1; margin: 0 0 8px; color: #1f2622; }
+.g-card p { font-size: 16px; line-height: 1.45; color: #36403c; }
+.g-card label { display: block; font-weight: 600; font-size: 15px; margin: 12px 0 4px; }
+.g-card input { display: block; width: 100%; padding: 11px; font: 17px "Source Sans 3", sans-serif; border: 1px solid #c2cdc4; border-radius: 10px; background: #fff; }
+.g-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.g-msg { margin: 12px 0 0; font-weight: 600; color: var(--oxblood); }
+.g-msg.good { color: #2d7a52; }
+.linkish { background: none; border: 0; padding: 0; color: #36403c; text-decoration: underline; font-size: 14.5px; }
+.people { list-style: none; padding: 0; margin: 8px 0; }
+.people li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 16px; }
+.people li span { overflow-wrap: anywhere; }
+.people em { font-style: normal; font-size: 12px; font-weight: 700; background: #e8eee8; border-radius: 6px; padding: 1px 6px; margin-left: 4px; color: #36403c; }
+.danger-btn { color: var(--oxblood) !important; border-color: #d8b5b7 !important; background: #fff4f4 !important; }
+#acAdd { margin-top: 10px; }
+#acAdd input { margin: 0; }
+#acAdd button { flex: 0 0 auto; }

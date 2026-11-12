@@ -4,7 +4,7 @@
 //   (Before, it tried the network first, which can hang for a long time with no signal.)
 // - A new version is downloaded in the background and switched to when you tap
 //   "Update now" (or the next time the app is fully closed and reopened).
-const VERSION = '20261112.1724';
+const VERSION = '20261112.2036';
 const CACHE = 'gamecoach-' + VERSION;
 const FILES = [
   './', 'css/style.css', 'manifest.webmanifest',

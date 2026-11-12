@@ -156,8 +156,10 @@ export class UI {
     const g = this.game;
     const me = g && g.human();
     if (!me) return;
-    $('myCards').innerHTML = me.hole.length && !me.folded ? me.hole.map(c => cardHTML(c, 'lg')).join('')
+    const cardsHtml = me.hole.length && !me.folded ? me.hole.map(c => cardHTML(c, 'lg')).join('')
       : me.folded && me.hole.length ? `<span class="muted">Folded</span>` : cardHTML(null, 'lg') + cardHTML(null, 'lg');
+    // only redraw your cards when they change, so they don't flicker as you push chips
+    if (this._cardsHtml !== cardsHtml) { $('myCards').innerHTML = cardsHtml; this._cardsHtml = cardsHtml; }
     const counts = this.myCounts || stackComposition(me.stack);
     const interactive = !!this.myCounts;
     $('myStack').innerHTML = chipsHTML(counts, { size: 'lg', interactive, maxPerColumn: 10, attr: 'id="myChips"' });
@@ -193,16 +195,25 @@ export class UI {
     if (!this.myCounts) return;
     if (this.changeMode) {
       if (i === 0) this.coachSay('White chips are the smallest — they can\'t be broken down.', 'note');
-      else breakChip(this.myCounts, i);
+      else if (breakChip(this.myCounts, i)) { this.renderMe(); this.flash('#myChips', i - 1); }
+      return;
     } else if (this.myCounts[i] > 0) {
       this.myCounts[i]--; this.betCounts[i]++;
     }
     this.renderMe();
+    this.flash('.my-bet', i);
   }
   onBetTap(i) {
     if (!this.betCounts || this.betCounts[i] <= 0) return;
     this.betCounts[i]--; this.myCounts[i]++;
     this.renderMe();
+    this.flash('#myChips', i);
+  }
+  // A quick glow on the column that just changed, so every tap visibly lands.
+  flash(sel, i) {
+    const col = document.querySelector(`${sel} .chipcol[data-denom="${i}"]`);
+    if (!col) return;
+    col.classList.remove('flash'); void col.offsetWidth; col.classList.add('flash');
   }
   pushAll() {
     for (let i = 0; i < DENOMS.length; i++) { this.betCounts[i] += this.myCounts[i]; this.myCounts[i] = 0; }
@@ -380,6 +391,16 @@ export class UI {
 
   // ---------- wiring ----------
   bindStatic() {
+    // Chips respond the moment your finger touches them (not on release), so quick
+    // repeated taps and slightly moving fingers still count.
+    document.addEventListener('pointerdown', e => {
+      const col = e.target.closest('.chipcol.tap');
+      if (!col || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      e.preventDefault();
+      const i = +col.dataset.denom;
+      if (col.closest('#myChips')) this.onStackTap(i);
+      else if (col.closest('.my-bet')) this.onBetTap(i);
+    });
     document.addEventListener('click', e => {
       const t = e.target.closest('.term');
       if (t) { e.preventDefault(); this.showTerm(t.dataset.term, t.dataset.ns); return; }
@@ -387,13 +408,7 @@ export class UI {
       const close = e.target.closest('[data-close]');
       if (close) { close.closest('.sheet').hidden = true; return; }
       if (e.target.classList.contains('sheet')) { e.target.hidden = true; return; }
-      const col = e.target.closest('.chipcol.tap');
-      if (col) {
-        const i = +col.dataset.denom;
-        if (col.closest('#myChips')) this.onStackTap(i);
-        else if (col.closest('.my-bet')) this.onBetTap(i);
-        return;
-      }
+      if (e.target.closest('.chipcol.tap')) return; // handled on pointerdown, below
       const cs = e.target.closest('[data-count-seat]');
       if (cs && !this.pickSeat) { this.openCount('stack', +cs.dataset.countSeat); return; }
       const seat = e.target.closest('.seat');

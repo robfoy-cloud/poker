@@ -25,6 +25,7 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; background: var(--sage); overflow-x: hidden; }
+html { touch-action: manipulation; } /* no double-tap zoom: quick repeated taps all count */
 body { display: flex; flex-direction: column; height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
 button { font: inherit; cursor: pointer; color: inherit; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
@@ -210,8 +211,15 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .chips-md .chip { --w: 22px; --h: 6px; }
 .chips-lg .chip { --w: 30px; --h: 7px; }
 .chips-lg { gap: 6px; min-height: 30px; }
-.chipcol.tap { cursor: pointer; padding: 2px; border-radius: 6px; }
-.chipcol.tap:active { background: rgba(0,0,0,.08); }
+.chipcol.tap {
+  cursor: pointer; border-radius: 10px; touch-action: none; -webkit-tap-highlight-color: transparent;
+  min-width: 44px; min-height: 54px; padding: 6px 7px 5px; justify-content: flex-start;
+  background: rgba(28,35,33,.045); box-shadow: inset 0 0 0 1px rgba(28,35,33,.08);
+  -webkit-user-select: none; user-select: none;
+}
+.chipcol.tap:active { background: rgba(29,92,69,.14); }
+.chipcol.flash { animation: chipflash .35s ease-out; }
+@keyframes chipflash { from { background: rgba(201,162,74,.55); } to { background: rgba(28,35,33,.045); } }
 .change-mode .chipcol.tap { outline: 2px dashed var(--brass); }
 .chip-face {
   --w: 18px; --h: 18px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 5px;
@@ -237,7 +245,8 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .prompt.wait { border-left-color: #aab5af; background: #eef1ee; color: var(--muted); }
 .me-row { display: flex; gap: 12px; align-items: flex-end; }
 .me-cards { display: flex; gap: 5px; min-width: 100px; }
-.me-stack { flex: 1; overflow-x: auto; }
+.me-stack { flex: 1; min-width: 0; }
+.me-stack .chips-lg { flex-wrap: wrap; gap: 5px; }
 .stack-label { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 3px; }
 .bet-row { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
 .bet-row .stack-label { margin: 0; flex: none; white-space: nowrap; }
@@ -461,7 +470,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 .my-bet-row { display: flex; align-items: flex-end; gap: 6px; }
 .my-spot.staging .my-bet-row { min-width: 64px; min-height: 30px; padding: 3px 6px; border-radius: 10px; border: 1.5px dashed rgba(227,199,127,.7); justify-content: center; }
 .bet-hint { font-size: 12px; font-weight: 600; color: var(--brass-soft); align-self: center; white-space: nowrap; }
-.my-bet .chipcol.tap { padding: 2px 3px; }
+.my-bet .chipcol.tap { min-width: 40px; min-height: 40px; padding: 4px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(227,199,127,.35); }
+.my-bet .chipcol.flash { animation: chipflash2 .35s ease-out; }
+@keyframes chipflash2 { from { background: rgba(227,199,127,.7); } to { background: rgba(255,255,255,.12); } }
 .my-bet .chip { --w: 24px; --h: 7px; }
 
 

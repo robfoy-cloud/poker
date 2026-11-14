@@ -1,10 +1,18 @@
-# Game Coach: Hold'em and Chess
+# Game Coach: Hold'em, Chess and Blackjack
 
-The app opens on a menu to choose **Texas Hold'em** or **Chess**; tap the game's name in the header to switch at any time (each game keeps its place).
+The app opens on a menu to choose **Texas Hold'em**, **Chess** or **Blackjack**; tap the game's name in the header to switch at any time (each game keeps its place).
 
 ## Sign-in (invite-only)
 
 Everyone signs in with a 6-digit code sent by email; there are no passwords and only addresses on the list can get a code. It uses the Learn Spanish Supabase project (like Flightroute); Game Coach's list is the `gc_allowed_emails` table there, so access to one app doesn't give access to another. Admins manage the list in the app: **Menu › Account and who can use the app** (or **Account** on the game menu). After the first sign-in the app opens offline too; the list is checked again whenever it's online, and someone you remove is locked out the next time their app connects. Settings are in `public/js/auth.js`.
+
+## Blackjack
+
+- A casino-style table with 0–4 other players. House rules: 6 decks, dealer stands on all 17s, blackjack pays 3 to 2, double on any two cards and after splitting, split up to four hands (split aces get one card each), insurance, dealer peeks for blackjack, optional late surrender, bets 10–500, cut card about 75% in.
+- You bet by pushing chips into your circle (edge-on, counted yourself). "Same bet" repeats your last bet.
+- Coaching: **Learn** explains dealing order, the burn and cut cards, the dealer's rules, payouts, and the basic-strategy play for every hand with the reason; **Advise** narrates and has a Hint button; **Test** only speaks when you go against basic strategy. Disallowed moves explain why when tapped. Your basic-strategy score is kept.
+- A colour-coded basic strategy chart for these exact rules, how to play, and a glossary.
+- Logic in `public/js/blackjack/` (`rules.js` strategy, `game.js` rounds, `app.js` screen and coach). `npm test` also simulates thousands of rounds.
 
 ## Chess
 

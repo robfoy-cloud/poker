@@ -4,6 +4,7 @@ import { RANK_CHAR, SUIT_SYMBOL, SUIT_NAME, RANK_NAME, evaluate } from './cards.
 import { stackComposition, betComposition, chipsHTML, totalOf, breakChip, DENOMS, legendHTML } from './chips.js';
 import { lookup, searchGlossary, GLOSSARY } from './glossary.js';
 import { lookupChess } from './chess/glossary.js';
+import { lookupBJ } from './blackjack/glossary.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -285,7 +286,7 @@ export class UI {
   info(html) { $('infoBody').innerHTML = this.termify(html); this.open('info'); }
 
   showTerm(term, ns) {
-    const hit = ns === 'chess' ? lookupChess(term) : lookup(term);
+    const hit = ns === 'chess' ? lookupChess(term) : ns === 'bj' ? lookupBJ(term) : lookup(term);
     if (!hit) return;
     const pop = $('termPop');
     pop.innerHTML = `<b>${esc(hit.term)}</b> — ${esc(hit.def)}`;

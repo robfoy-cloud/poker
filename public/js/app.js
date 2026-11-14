@@ -386,10 +386,11 @@ function showView(name) {
   $('home').hidden = name !== 'home';
   $('pokerView').hidden = name !== 'poker';
   $('chessView').hidden = name !== 'chess';
+  $('bjView').hidden = name !== 'bj';
   document.body.dataset.view = name;
   const theme = document.querySelector('meta[name=theme-color]');
-  if (theme) theme.content = name === 'chess' ? '#22304a' : '#123d30';
-  document.title = name === 'chess' ? 'Chess Coach' : name === 'poker' ? "Hold'em Coach" : 'Game Coach';
+  if (theme) theme.content = name === 'chess' ? '#22304a' : name === 'bj' ? '#0b1a2e' : '#123d30';
+  document.title = { chess: 'Chess Coach', poker: "Hold'em Coach", bj: 'Blackjack Coach' }[name] || 'Game Coach';
 }
 function showHome() {
   for (const id of ['menu', 'setup', 'info']) ui.close(id);
@@ -398,6 +399,9 @@ function showHome() {
   let chessOn = false;
   try { const g = JSON.parse(localStorage.getItem('chess.game') || 'null'); chessOn = g && !g.over && g.pgn; } catch {}
   $('chessState').textContent = chessOn ? 'Game in progress' : '';
+  let bjOn = false;
+  try { const g = JSON.parse(localStorage.getItem('bj.game') || 'null'); bjOn = !!(g && g.stack); } catch {}
+  $('bjState').textContent = bjOn ? 'Your chips are waiting' : '';
   $('homeTitle').textContent = settings.name ? `What shall we play, ${settings.name}?` : 'What shall we play?';
   showView('home');
 }
@@ -409,6 +413,16 @@ async function openChess() {
   showView('chess');
   chessApp.show();
 }
+let bjApp = null;
+async function openBlackjack() {
+  if (!bjApp) {
+    const { BlackjackApp } = await import('./blackjack/app.js');
+    bjApp = new BlackjackApp({ settings, ui, onSwitch: showHome, saveSettings: () => saveSettings(settings), openAccount: () => openAccount(ui) });
+  }
+  showView('bj');
+  bjApp.show();
+}
+$('goBJ').onclick = openBlackjack;
 $('goPoker').onclick = () => { showView('poker'); if (!ui.game) openSetup(); };
 $('goChess').onclick = openChess;
 $('pGames').onclick = showHome;

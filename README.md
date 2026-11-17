@@ -2,6 +2,16 @@
 
 The app opens on a menu to choose **Texas Hold'em**, **Chess**, **Blackjack** or **Backgammon**; tap the game's name in the header to switch at any time (each game keeps its place).
 
+## Online poker with friends
+
+In Texas Hold'em, open **New game / settings** and choose **Host a table**: you get a 5-character table code. Friends open the app on their own phones, choose **Join a table** and type the code (they must be on the sign-in list). Empty seats go to computer players; the host taps **Start the game**.
+
+- The table runs on the Worker in a Cloudflare Durable Object (`src/room.js`), using the same engine as practice games. Each phone receives only its own hole cards (and any shown at the showdown).
+- Everyone has their own coach at their own level, running on their own phone from what they can see.
+- If someone loses connection they're reconnected automatically; after a minute away their turns are played for them (check or fold) until they're back.
+- Needs no extra setup: the Durable Object is declared in `wrangler.toml` and created on the next deploy (SQLite-backed, so it works on the free Workers plan).
+- Local testing: `npm install`, put `DEV_SKIP_AUTH=1` in `.dev.vars`, then `npx wrangler dev`.
+
 ## Sign-in (invite-only)
 
 Everyone signs in with a 6-digit code sent by email; there are no passwords and only addresses on the list can get a code. It uses the Learn Spanish Supabase project (like Flightroute); Game Coach's list is the `gc_allowed_emails` table there, so access to one app doesn't give access to another. Admins manage the list in the app: **Menu › Account and who can use the app** (or **Account** on the game menu). After the first sign-in the app opens offline too; the list is checked again whenever it's online, and someone you remove is locked out the next time their app connects. Settings are in `public/js/auth.js`.

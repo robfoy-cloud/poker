@@ -165,7 +165,7 @@ export class Game {
       for (;;) {
         const pushed = await this.io.humanPost({ which, amount: need, player: p, game: this });
         if (pushed === need) break;
-        await this.emit('mistake', { kind: 'wrongBlind', which, pushed, need });
+        await this.emit('mistake', { kind: 'wrongBlind', which, pushed, need, seat: p.seat });
       }
     }
     this.put(p, need);
@@ -177,22 +177,22 @@ export class Game {
     if (!this.io.dealerStep) return;
     if (step === 'firstCard') {
       for (;;) {
-        const seat = await this.io.dealerStep({ step, game: this });
-        if (seat === correct) { await this.emit('dealerOk', { step }); return; }
-        await this.emit('mistake', { kind: 'dealFirst', chosen: seat, correct });
+        const seat = await this.io.dealerStep({ step, game: this, seat: this.button });
+        if (seat === correct) { await this.emit('dealerOk', { step, seat: this.button }); return; }
+        await this.emit('mistake', { kind: 'dealFirst', chosen: seat, correct, seat: this.button });
       }
     }
     // flop / turn / river: must burn first, then deal the right number of cards.
     for (;;) {
-      const choice = await this.io.dealerStep({ step: step + ':first', street: step, game: this });
+      const choice = await this.io.dealerStep({ step: step + ':first', street: step, game: this, seat: this.button });
       if (choice === 'burn') break;
-      await this.emit('mistake', { kind: 'noBurn', street: step });
+      await this.emit('mistake', { kind: 'noBurn', street: step, seat: this.button });
     }
     for (;;) {
-      const count = await this.io.dealerStep({ step: step + ':count', street: step, game: this });
+      const count = await this.io.dealerStep({ step: step + ':count', street: step, game: this, seat: this.button });
       const right = step === 'flop' ? 3 : 1;
-      if (count === right) { await this.emit('dealerOk', { step }); return; }
-      await this.emit('mistake', { kind: 'dealCount', street: step, count, right });
+      if (count === right) { await this.emit('dealerOk', { step, seat: this.button }); return; }
+      await this.emit('mistake', { kind: 'dealCount', street: step, count, right, seat: this.button });
     }
   }
 
@@ -293,26 +293,26 @@ export class Game {
     for (;;) {
       const r = await this.io.humanAction({ ...ctx, warnedFold }, this);
       if (r.type === 'fold') {
-        if (ctx.canCheck && !warnedFold) { warnedFold = true; await this.emit('mistake', { kind: 'foldFree' }); continue; }
+        if (ctx.canCheck && !warnedFold) { warnedFold = true; await this.emit('mistake', { kind: 'foldFree', seat: p.seat }); continue; }
         return { type: 'fold' };
       }
       let amount = r.type === 'check' ? 0 : r.amount;
       if (amount === 0) {
         if (ctx.canCheck) return { type: 'check' };
-        await this.emit('mistake', { kind: 'checkFacingBet', toCall: ctx.toCall });
+        await this.emit('mistake', { kind: 'checkFacingBet', toCall: ctx.toCall, seat: p.seat });
         continue;
       }
       if (amount > p.stack) amount = p.stack;
       const allIn = amount === p.stack;
-      if (amount < ctx.toCall && !allIn) { await this.emit('mistake', { kind: 'short', pushed: amount, toCall: ctx.toCall }); continue; }
+      if (amount < ctx.toCall && !allIn) { await this.emit('mistake', { kind: 'short', pushed: amount, toCall: ctx.toCall, seat: p.seat }); continue; }
       if (amount <= ctx.toCall) return { type: 'call', amount };
       if (ctx.cannotRaise) {
-        await this.emit('mistake', { kind: 'cannotRaise', pushed: amount, toCall: ctx.toCall });
+        await this.emit('mistake', { kind: 'cannotRaise', pushed: amount, toCall: ctx.toCall, seat: p.seat });
         continue;
       }
       const to = p.bet + amount;
       if (to < ctx.minRaiseTo && !allIn) {
-        await this.emit('mistake', { kind: 'smallRaise', pushed: amount, to, minRaiseTo: ctx.minRaiseTo, toCall: ctx.toCall, currentBet: ctx.currentBet });
+        await this.emit('mistake', { kind: 'smallRaise', pushed: amount, to, minRaiseTo: ctx.minRaiseTo, toCall: ctx.toCall, currentBet: ctx.currentBet, seat: p.seat });
         continue;
       }
       return { type: 'raise', to };
@@ -412,8 +412,9 @@ export class Game {
   async endHand() {
     const busted = [];
     for (const p of this.players) if (!p.out && p.stack === 0) { p.out = true; busted.push(p.seat); }
-    const human = this.human();
-    if ((human && human.out) || this.live().length < 2) this.over = true;
+    // over when fewer than two players are left, or every person (not computer) is out
+    const people = this.players.filter(p => p.isHuman);
+    if ((people.length && people.every(p => p.out)) || this.live().length < 2) this.over = true;
     await this.emit('handEnd', { busted, over: this.over, winners: this.winners });
   }
 }

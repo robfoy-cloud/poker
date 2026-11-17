@@ -26,6 +26,11 @@ const withTimeout = (promise, ms, fallback) => Promise.race([promise, new Promis
 const hasStoredSession = () => { try { return !!localStorage.getItem(AUTH_KEY); } catch { return false; } };
 export const signedIn = () => !authOn || !!(access && hasStoredSession());
 export const currentAccess = () => access;
+// The current sign-in token, for talking to the server (online tables).
+export async function accessToken() {
+  if (!SB) return '';
+  try { const { data } = await withTimeout(SB.auth.getSession(), 6000, { data: {} }); return (data && data.session && data.session.access_token) || ''; } catch { return ''; }
+}
 
 function authError(e) {
   const m = String((e && e.message) || e || '');

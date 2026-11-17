@@ -9,6 +9,7 @@ import { Trainer } from './trainer.js';
 import { ShowdownTrainer } from './showdown.js';
 import { APP_VERSION } from './version.js';
 import { requireSignIn, openAccount } from './auth.js';
+import { OnlineTable } from './online.js';
 
 const $ = id => document.getElementById(id);
 const NAMES = ['Ava', 'Ben', 'Cleo', 'Dev', 'Esme', 'Finn', 'Gus', 'Hana'];
@@ -80,7 +81,21 @@ function makeIO(myGen) {
   };
 }
 
+let online = null;
+function startOnline(how, code) {
+  gen++;                       // stop any practice game
+  if (online) { online.closed = true; try { online.ws.close(); } catch {} }
+  ui.endStaging(); ui.setActions([]); $('ticker').hidden = true;
+  const myGen = gen;
+  online = new OnlineTable({ ui, coach, settings, io: makeIO(myGen), onStop: () => { online = null; ui.game = null; openSetup(); } });
+  if (how === 'host') {
+    const [sb, bb] = settings.blinds.split('/').map(Number);
+    online.host({ players: settings.players, stack: settings.stack, sb, bb });
+  } else online.join(code);
+}
+
 async function newGame() {
+  if (online) { online.leave(); online = null; }
   gen++;
   const myGen = gen;
   const [sb, bb] = settings.blinds.split('/').map(Number);
@@ -111,6 +126,35 @@ function openSetup() {
   ui.open('setup');
 }
 $('nPlayers').oninput = e => { $('nPlayersOut').textContent = e.target.value; };
+function readSetup() {
+  settings.name = $('playerName').value.trim().slice(0, 14);
+  settings.players = +$('nPlayers').value;
+  settings.stack = +$('startStack').value;
+  settings.blinds = $('blinds').value;
+  settings.level = +document.querySelector('input[name=level]:checked').value;
+  settings.speed = +$('speed').value;
+  settings.showTotals = $('showTotals').checked;
+  settings.step = $('stepMode').checked;
+  saveSettings(settings); syncStep();
+  $('levelSelect').value = settings.level;
+}
+$('hostBtn').onclick = () => {
+  readSetup();
+  if (!settings.name) { $('playerName').focus(); $('playerName').placeholder = 'Add your name for online play'; return; }
+  ui.close('setup'); startOnline('host');
+};
+$('joinBtn').onclick = () => {
+  readSetup();
+  if (!settings.name) { $('playerName').focus(); $('playerName').placeholder = 'Add your name for online play'; return; }
+  ui.close('setup');
+  $('infoBody').innerHTML = `<h2>Join a table</h2><p>Enter the code your friend sees on their screen.</p>
+    <div class="row"><input type="text" id="olCode" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="e.g. K7QPM" style="text-transform:uppercase;font-size:22px;letter-spacing:4px"><button class="primary" id="olGo">Join</button></div>`;
+  ui.open('info');
+  $('olCode').focus();
+  const go = () => startOnline('join', $('olCode').value);
+  $('olGo').onclick = go;
+  $('olCode').onkeydown = e => { if (e.key === 'Enter') go(); };
+};
 $('startBtn').onclick = () => {
   settings.name = $('playerName').value.trim().slice(0, 14);
   settings.players = +$('nPlayers').value;

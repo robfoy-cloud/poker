@@ -8,3 +8,14 @@ binding = "ASSETS"
 
 [vars]
 CLAUDE_MODEL = "claude-sonnet-5-5"
+SUPABASE_URL = "https://veoxasldburbztzucyrn.supabase.co"
+SUPABASE_KEY = "sb_publishable_Gwnaqzgzz-Abvn5hiQvhsw_32P5goIo"
+
+# Online poker tables (one Durable Object per table). SQLite-backed, so it works on the free plan.
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "PokerRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PokerRoom"]

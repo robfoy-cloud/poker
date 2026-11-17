@@ -558,3 +558,13 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px s
 }
 @keyframes tickerIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ticker { animation: none; transition: none; } }
+
+/* online play */
+.online-box { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+.online-box h3 { margin-top: 0; }
+.online-box .row button { flex: 1; padding: 10px; font-size: 15.5px; }
+.ol-code { font-family: var(--display); font-size: 46px; letter-spacing: 8px; text-align: center; color: var(--baize); background: #eef5f0; border: 2px dashed var(--baize); border-radius: 14px; padding: 8px 0; margin: 4px 0 10px; }
+.ol-on { color: #2d7a52; font-weight: 700; font-size: 14px; }
+.ol-off { color: var(--muted); font-size: 14px; }
+.remote-tag { font-size: 9.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: #9fe0bf; }
+.remote-tag.away { color: #f2a5a5; }

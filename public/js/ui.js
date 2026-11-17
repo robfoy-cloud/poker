@@ -91,6 +91,8 @@ export class UI {
   }
 
   // ---------- table ----------
+  // Seats are drawn so that whoever holds this device sits at the bottom.
+  view(i) { const g = this.game, me = g && g.human(); const off = me ? me.seat : 0; return ((i - off) % g.n + g.n) % g.n; }
   seatXY(i, n, rFactor = 1) {
     // you sit at the bottom; the next seat clockwise is to your left (screen left), and so on.
     const ang = (Math.PI / 2) + i * (2 * Math.PI / n);
@@ -107,7 +109,7 @@ export class UI {
     const winners = new Set((g.winners || []).map(w => w.seat));
     let seatsHTML = '';
     g.players.forEach((p, i) => {
-      const { x, y } = this.seatXY(i, n);
+      const { x, y } = this.seatXY(this.view(i), n);
       const cls = ['seat'];
       if (p.isHuman) cls.push('me');
       if (p.out) cls.push('out'); else if (p.folded) cls.push('folded');
@@ -125,13 +127,13 @@ export class UI {
       const handName = p.shown && p.best ? `<div class="act">${esc(p.best.name)}</div>` : '';
       seatsHTML += `<div class="${cls.join(' ')}" data-seat="${i}" style="left:${x}%;top:${y}%">
         <div class="cards">${cards}</div>
-        <div class="plate"><div class="nm">${esc(p.name)}</div><div class="pos">${pos[i] || ''}${act ? ` <span class="act-inline">${esc(act)}</span>` : ''}</div>${stack}${total}${handName}</div>
+        <div class="plate"><div class="nm">${esc(p.name)}</div>${p.remote && !p.isHuman ? `<div class="remote-tag${p.away ? ' away' : ''}">${p.away ? 'away' : 'online'}</div>` : ''}<div class="pos">${pos[i] || ''}${act ? ` <span class="act-inline">${esc(act)}</span>` : ''}</div>${stack}${total}${handName}</div>
       </div>`;
       if (p.isHuman) {
-        const b = this.seatXY(i, n, 0.58);
+        const b = this.seatXY(this.view(i), n, 0.58);
         seatsHTML += `<div class="bet-spot my-spot" id="myTableBet" style="left:${b.x}%;top:${b.y}%"></div>`;
       } else if (p.bet > 0) {
-        const b = this.seatXY(i, n, 0.58);
+        const b = this.seatXY(this.view(i), n, 0.58);
         seatsHTML += `<div class="bet-spot" style="left:${b.x}%;top:${b.y}%">${chipsHTML(betComposition(p.bet), { size: 'md' })}${show ? `<span class="total">${p.bet}</span>` : ''}</div>`;
       }
     });
@@ -140,7 +142,7 @@ export class UI {
 
     const db = $('dealerBtn');
     if (g.button >= 0) {
-      const d = this.seatXY(g.button + 0.42, n, 0.76);
+      const d = this.seatXY(this.view(g.button) + 0.42, n, 0.76);
       db.style.left = d.x + '%'; db.style.top = d.y + '%'; db.hidden = false;
     } else db.hidden = true;
 

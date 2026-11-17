@@ -12,9 +12,63 @@ const SYSTEM = `You are a friendly, expert poker coach inside a practice app tha
 - If asked what to do, give a clear recommendation and the reasoning (hand strength, draws/outs, pot odds, position, opponents' actions).
 - If asked about rules or procedure (dealing, burning, blinds, who acts first, when a betting round ends), explain precisely.`;
 
+export { PokerRoom } from './room.js';
+
+// ---------- who's asking? (invite-only, same list as the app's sign-in) ----------
+const userCache = new Map(); // token -> { email, until }
+async function verifyUser(token, env) {
+  if (env.DEV_SKIP_AUTH === '1') return 'dev@local';
+  if (!token) return null;
+  const hit = userCache.get(token);
+  if (hit && hit.until > Date.now()) return hit.email;
+  const base = env.SUPABASE_URL, key = env.SUPABASE_KEY;
+  try {
+    const u = await fetch(`${base}/auth/v1/user`, { headers: { apikey: key, authorization: `Bearer ${token}` } });
+    if (!u.ok) return null;
+    const user = await u.json();
+    const ok = await fetch(`${base}/rest/v1/rpc/gc_is_allowed`, { method: 'POST', headers: { apikey: key, authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: '{}' });
+    if (!ok.ok || (await ok.json()) !== true) return null;
+    const email = (user.email || '').toLowerCase();
+    userCache.set(token, { email, until: Date.now() + 5 * 60 * 1000 });
+    if (userCache.size > 500) userCache.clear();
+    return email;
+  } catch { return null; }
+}
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // no 0/O or 1/I/L to confuse
+const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(5)), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    // ---------- online poker tables ----------
+    if (url.pathname === '/api/room' && request.method === 'POST') {
+      const token = (request.headers.get('authorization') || '').replace(/^Bearer /, '');
+      const email = await verifyUser(token, env);
+      if (!email) return json({ error: 'Please sign in again.' }, 401);
+      let body; try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+      const st = body.settings || {};
+      const settings = {
+        players: Math.max(2, Math.min(9, +st.players || 6)),
+        stack: [500, 1000, 1500, 2000].includes(+st.stack) ? +st.stack : 1000,
+        sb: [5, 10, 25].includes(+st.sb) ? +st.sb : 5, bb: [10, 20, 50].includes(+st.bb) ? +st.bb : 10,
+      };
+      for (let i = 0; i < 5; i++) {
+        const code = newCode();
+        const stub = env.ROOMS.get(env.ROOMS.idFromName(code));
+        const r = await stub.fetch('https://room/init', { method: 'POST', body: JSON.stringify({ code, settings, clientId: body.clientId }) });
+        if (r.ok) return json({ code });
+      }
+      return json({ error: 'Could not make a table, try again.' }, 500);
+    }
+    const m = url.pathname.match(/^\/api\/room\/([A-Z0-9]{4,6})\/ws$/i);
+    if (m) {
+      const email = await verifyUser(url.searchParams.get('token') || '', env);
+      if (!email) return new Response('Please sign in again.', { status: 401 });
+      const stub = env.ROOMS.get(env.ROOMS.idFromName(m[1].toUpperCase()));
+      const headers = new Headers(request.headers); headers.set('x-email', email);
+      return stub.fetch(new Request('https://room/ws', { headers }));
+    }
 
     if (url.pathname === '/api/health') {
       return json({ available: !!env.ANTHROPIC_API_KEY, passcode: !!env.COACH_PASSCODE });

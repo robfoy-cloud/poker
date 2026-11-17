@@ -1,10 +1,18 @@
-# Game Coach: Hold'em, Chess and Blackjack
+# Game Coach: Hold'em, Chess, Blackjack and Backgammon
 
-The app opens on a menu to choose **Texas Hold'em**, **Chess** or **Blackjack**; tap the game's name in the header to switch at any time (each game keeps its place).
+The app opens on a menu to choose **Texas Hold'em**, **Chess**, **Blackjack** or **Backgammon**; tap the game's name in the header to switch at any time (each game keeps its place).
 
 ## Sign-in (invite-only)
 
 Everyone signs in with a 6-digit code sent by email; there are no passwords and only addresses on the list can get a code. It uses the Learn Spanish Supabase project (like Flightroute); Game Coach's list is the `gc_allowed_emails` table there, so access to one app doesn't give access to another. Admins manage the list in the app: **Menu › Account and who can use the app** (or **Account** on the game menu). After the first sign-in the app opens offline too; the list is checked again whenever it's online, and someone you remove is locked out the next time their app connects. Settings are in `public/js/auth.js`.
+
+## Backgammon
+
+- You against a computer opponent at four levels (Rookie, Novice, Club player, Expert), light or dark checkers, optional doubling cube, running score with single games, gammons and backgammons.
+- Full rules: opening roll, doubles played four times, entering from the bar and dancing, must use both dice (or the larger), bearing off with higher numbers.
+- Tap a checker to see where it can go (it can move on with both dice in one go); Undo before you tap Done. Disallowed moves explain why.
+- Coaching: **Learn** explains every move — hits, made points, anchors, primes, blots and how many shots hit them, pip counts, the race — and suggests a move (highlighted on the board) with the standard opening moves; **Advise** narrates and has a Hint button; **Test** speaks only for clear mistakes. Cube advice uses the 25% take rule.
+- Opening-moves table, how to play, and a glossary. Logic in `public/js/backgammon/` (engine: move generation, position judgement, two-ply lookahead).
 
 ## Blackjack
 

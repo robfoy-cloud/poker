@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/chess.css">
   <link rel="stylesheet" href="css/blackjack.css">
+  <link rel="stylesheet" href="css/backgammon.css">
 </head>
 <body>
   <div id="updateBar" class="update-bar" hidden role="status">
@@ -93,6 +94,8 @@
 
   <div id="bjView" class="view bj" hidden></div>
 
+  <div id="bgView" class="view bgv" hidden></div>
+
   <div id="home" class="home" hidden>
     <div class="home-inner">
       <h1 id="homeTitle">What shall we play?</h1>
@@ -107,6 +110,10 @@
       <button class="game-tile bj-tile" id="goBJ">
         <img src="icons/blackjack.svg" alt="" width="64" height="64">
         <span class="gt-text"><b>Blackjack</b><span>Learn the rules, the jargon and basic strategy at a casino-style table.</span><em id="bjState"></em></span>
+      </button>
+      <button class="game-tile bg-tile" id="goBG">
+        <img src="icons/backgammon.svg" alt="" width="64" height="64">
+        <span class="gt-text"><b>Backgammon</b><span>Learn to move, hit, block and bear off — and when to use the doubling cube.</span><em id="bgState"></em></span>
       </button>
       <p class="home-foot">You can switch games any time by tapping the game's name at the top.</p>
       <p class="home-foot"><button class="linkish" id="homeAccount">Account</button></p>

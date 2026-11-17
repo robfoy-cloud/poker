@@ -387,10 +387,11 @@ function showView(name) {
   $('pokerView').hidden = name !== 'poker';
   $('chessView').hidden = name !== 'chess';
   $('bjView').hidden = name !== 'bj';
+  $('bgView').hidden = name !== 'bg';
   document.body.dataset.view = name;
   const theme = document.querySelector('meta[name=theme-color]');
-  if (theme) theme.content = name === 'chess' ? '#22304a' : name === 'bj' ? '#0b1a2e' : '#123d30';
-  document.title = { chess: 'Chess Coach', poker: "Hold'em Coach", bj: 'Blackjack Coach' }[name] || 'Game Coach';
+  if (theme) theme.content = name === 'chess' ? '#22304a' : name === 'bj' ? '#0b1a2e' : name === 'bg' ? '#3b2416' : '#123d30';
+  document.title = { chess: 'Chess Coach', poker: "Hold'em Coach", bj: 'Blackjack Coach', bg: 'Backgammon Coach' }[name] || 'Game Coach';
 }
 function showHome() {
   for (const id of ['menu', 'setup', 'info']) ui.close(id);
@@ -402,6 +403,9 @@ function showHome() {
   let bjOn = false;
   try { const g = JSON.parse(localStorage.getItem('bj.game') || 'null'); bjOn = !!(g && g.stack); } catch {}
   $('bjState').textContent = bjOn ? 'Your chips are waiting' : '';
+  let bgOn = false;
+  try { const g = JSON.parse(localStorage.getItem('bg.game') || 'null'); bgOn = !!(g && g.a); } catch {}
+  $('bgState').textContent = bgOn ? 'Game in progress' : '';
   $('homeTitle').textContent = settings.name ? `What shall we play, ${settings.name}?` : 'What shall we play?';
   showView('home');
 }
@@ -423,6 +427,16 @@ async function openBlackjack() {
   bjApp.show();
 }
 $('goBJ').onclick = openBlackjack;
+let bgApp = null;
+async function openBackgammon() {
+  if (!bgApp) {
+    const { BackgammonApp } = await import('./backgammon/app.js');
+    bgApp = new BackgammonApp({ settings, ui, onSwitch: showHome, saveSettings: () => saveSettings(settings), openAccount: () => openAccount(ui) });
+  }
+  showView('bg');
+  bgApp.show();
+}
+$('goBG').onclick = openBackgammon;
 $('goPoker').onclick = () => { showView('poker'); if (!ui.game) openSetup(); };
 $('goChess').onclick = openChess;
 $('pGames').onclick = showHome;

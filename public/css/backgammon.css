@@ -1,0 +1,113 @@
+/* Backgammon Coach — "cedar tavli board": a cedar-wood case, deep slate-green field,
+   ivory and brick points, classical inscribed lettering. */
+
+@font-face { font-family: "Marcellus"; src: url("../fonts/marcellus.woff2") format("woff2"); font-display: swap; }
+
+:root {
+  --bg-cedar: #3b2416;
+  --bg-cedar-2: #6c4123;
+  --bg-field: #2e4a46;
+  --bg-ivory: #efe3c4;
+  --bg-brick: #a8402c;
+  --bg-brass: #d4ad62;
+  --bg-stone: #e7e3dc;
+  --bg-display: "Marcellus", Georgia, serif;
+}
+
+/* header */
+.bg-top { background: var(--bg-cedar); border-bottom: 2px solid var(--bg-brass); }
+.bg-top .brand span { font-family: var(--bg-display); font-size: 21px; letter-spacing: .5px; color: var(--bg-ivory); }
+.bg-top .brand .chev { color: var(--bg-brass); }
+.bg-top select { color: var(--bg-ivory); border-color: rgba(212,173,98,.6);
+  background-image: linear-gradient(45deg, transparent 50%, var(--bg-brass) 50%), linear-gradient(135deg, var(--bg-brass) 50%, transparent 50%); }
+.bg-top .iconbtn { color: var(--bg-ivory); }
+@media (max-width: 430px) { .bg-top .brand span { font-size: 17px; } }
+
+/* layout */
+.view.bgv { background: var(--bg-stone); }
+.bg-layout { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.bg-main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 8px 8px 10px; gap: 6px; overflow-y: auto; }
+.bgv { --bgboard: min(100%, calc((100dvh - 330px) * 1.36), 760px); }
+@media (min-width: 900px) {
+  .bg-layout { display: grid; grid-template-columns: minmax(520px, 1.4fr) minmax(320px, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .bg-main { padding: 14px 20px; justify-content: center; }
+  .bg-coach { grid-column: 2; min-height: 0; overflow: hidden; border-left: 1px solid #cfc8bd; }
+  .bg-tab, .bg-ticker { display: none !important; }
+  .bgv { --bgboard: min(100%, calc((100dvh - 300px) * 1.36), 820px); }
+}
+
+.bg-player { display: flex; align-items: center; gap: 8px; width: var(--bgboard); margin: 0 auto; min-height: 30px; }
+.bg-stats { margin-left: auto; display: flex; gap: 8px; font-size: 14px; color: #4b4339; }
+.bg-stats b { font-family: var(--bg-display); font-size: 17px; color: var(--bg-cedar); }
+.bg-stats .on-bar { color: var(--bg-brick); font-weight: 700; }
+
+/* the board */
+.bg-board-frame { width: var(--bgboard); margin: 0 auto; border-radius: 12px; box-shadow: 0 10px 24px rgba(40,25,12,.35); }
+.bg-board { display: block; width: 100%; height: auto; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.bg-board .field { fill: var(--bg-field); }
+.bg-board .tray { fill: #2a1a10; opacity: .55; }
+.bg-board .pt-a { fill: var(--bg-ivory); }
+.bg-board .pt-b { fill: var(--bg-brick); }
+.bg-board .pnum { font: 600 8.5px "Source Sans 3", sans-serif; fill: rgba(255,240,215,.85); }
+.bg-board .cnt { font: 700 12px "Source Sans 3", sans-serif; }
+.bg-board .cnt.on-light { fill: #3b2416; } .bg-board .cnt.on-dark { fill: #f5ead2; }
+.bg-board .hit-area { fill: transparent; cursor: pointer; }
+.bg-board .die rect { fill: #fffaf0; stroke: #b9a77f; stroke-width: 1; }
+.bg-board .die circle { fill: #222; }
+.bg-board .die.theirs rect { fill: #2b221c; stroke: #000; }
+.bg-board .die.theirs circle { fill: #f5ead2; }
+.bg-board .die.used { opacity: .35; }
+.bg-board .dleft { font: 600 10px "Source Sans 3", sans-serif; fill: var(--bg-ivory); }
+.bg-board .cube rect { fill: #fdfaf2; stroke: var(--bg-brass); stroke-width: 2; }
+.bg-board .cube text { font: 700 12px "Source Sans 3", sans-serif; fill: var(--bg-cedar); }
+.bg-board .hl-source { fill: rgba(212,173,98,.18); stroke: rgba(212,173,98,.75); stroke-width: 1.5; pointer-events: none; }
+.bg-board .hl-selected { fill: rgba(255,224,140,.32); stroke: #ffd77a; stroke-width: 2.5; pointer-events: none; }
+.bg-board .hl-target { fill: rgba(120,220,170,.28); stroke: #7fe0b0; stroke-width: 2.5; stroke-dasharray: 5 3; pointer-events: none; }
+.bg-board .hl-hint-from, .bg-board .hl-hint-to { fill: none; stroke: #8fc7ff; stroke-width: 2; stroke-dasharray: 2 3; pointer-events: none; }
+.bg-board .hl-hint-to { stroke-dasharray: none; stroke-opacity: .8; }
+.bg-board .hl-opp { fill: rgba(255,255,255,.12); stroke: rgba(255,255,255,.6); stroke-width: 1.5; pointer-events: none; }
+
+.bg-status { width: var(--bgboard); margin: 2px auto 0; font-size: 15.5px; line-height: 1.35; background: #efe8db; border-left: 4px solid var(--bg-cedar-2); padding: 6px 10px; border-radius: 0 8px 8px 0; }
+.bg-status.wait { border-left-color: #a99c88; color: #6b6255; }
+.bg-ticker { width: var(--bgboard); margin: 0 auto; border-left-color: var(--bg-field); }
+.bg-actions { display: flex; gap: 6px; width: var(--bgboard); margin: 2px auto 0; }
+.bg-actions button { flex: 1 1 0; min-width: 0; white-space: nowrap; border: 1px solid #c6bba9; background: #fff; border-radius: 10px; padding: 11px 4px; font-size: 16px; font-weight: 600; }
+.bg-actions .go { background: linear-gradient(180deg, #3d5f5a, var(--bg-field)); color: #fff; border-color: #1f3431; }
+.bg-actions .danger { color: var(--bg-brick); border-color: #dfbcb3; }
+.bg-actions .hint { background: #fbf2dc; border-color: var(--bg-brass); }
+
+/* coach panel */
+.bgv .coach-panel { background: #faf8f4; border-left-color: var(--bg-brass); }
+.bgv .coach-head { background: #faf8f4; border-bottom-color: #ddd5c8; }
+.bgv .coach-head > span { font-family: var(--bg-display); font-size: 22px; color: var(--bg-cedar); }
+.bgv .msg { background: #f1ede6; }
+.bgv .msg.advice { background: #e8efed; border-left-color: var(--bg-field); }
+.bgv .msg.action { background: #f3eee6; border-left: 4px solid var(--bg-cedar-2); border-radius: 0 10px 10px 0; }
+.bgv .msg.street { background: #efe8db; border-left-color: var(--bg-brass); }
+.bgv .divider { font-family: var(--bg-display); color: var(--bg-cedar); }
+.bgv .term { color: #2b6a63; text-decoration-color: rgba(43,106,99,.55); }
+.bgv .coach-tab { background: linear-gradient(180deg, var(--bg-cedar-2), var(--bg-cedar)); color: var(--bg-ivory); box-shadow: -3px 3px 10px rgba(40,25,12,.35), inset 2px 0 0 var(--bg-brass); }
+.bgv .coach-tab .tab-label { font-family: var(--bg-display); font-size: 17px; }
+.bgv .coach-tab .badge { background: var(--bg-brass); color: var(--bg-cedar); }
+.bgv .coach-tab.alert .badge { background: #e05a5f; color: #fff; }
+.bg-tab { top: 30%; }
+
+/* sheets opened from backgammon */
+.bg-h { font-family: var(--bg-display) !important; font-weight: 400 !important; color: var(--bg-cedar) !important; font-size: 28px !important; }
+body[data-view="bg"] .sheet-card { border-top-color: var(--bg-brass); }
+body[data-view="bg"] .sheet-card h3 { font-family: var(--bg-display); font-weight: 400; color: var(--bg-cedar); font-size: 20px; }
+body[data-view="bg"] .levels label:has(input:checked) { border-color: var(--bg-field); background: #edf3f1; }
+body[data-view="bg"] .levels input, body[data-view="bg"] .check input { accent-color: var(--bg-field); }
+body[data-view="bg"] .seg.on { background: var(--bg-field); border-color: #1f3431; }
+body[data-view="bg"] .gloss-list dt { color: var(--bg-cedar); }
+body[data-view="bg"] .termpop { background: var(--bg-cedar); box-shadow: 0 0 0 1px var(--bg-brass), 0 12px 30px rgba(0,0,0,.4); }
+body[data-view="bg"] .termpop b { font-family: var(--bg-display); font-weight: 400; color: var(--bg-brass); font-size: 17px; }
+.bg-primary { background: linear-gradient(180deg, #3d5f5a, var(--bg-field)) !important; border-color: #1f3431 !important; }
+.bg-tile { background: linear-gradient(160deg, var(--bg-cedar-2), var(--bg-cedar)); color: var(--bg-ivory); box-shadow: 0 10px 24px rgba(40,25,12,.25), inset 0 0 0 2px rgba(212,173,98,.55); }
+.bg-tile b { font-family: var(--bg-display); font-weight: 400; font-size: 27px; color: var(--bg-ivory); }
+.bg-tile em { color: var(--bg-brass); }
+
+@media (max-height: 640px) and (max-width: 899px) {
+  .bgv { --bgboard: min(100%, calc((100dvh - 300px) * 1.36)); }
+  .bg-actions button { padding: 9px 4px; }
+}

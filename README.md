@@ -22,6 +22,8 @@ Everyone signs in with a 6-digit code sent by email; there are no passwords and 
 - Full rules: opening roll, doubles played four times, entering from the bar and dancing, must use both dice (or the larger), bearing off with higher numbers.
 - Tap a checker to see where it can go (it can move on with both dice in one go); Undo before you tap Done. Disallowed moves explain why.
 - Coaching: **Learn** explains every move — hits, made points, anchors, primes, blots and how many shots hit them, pip counts, the race — and suggests a move (highlighted on the board) with the standard opening moves; **Advise** narrates and has a Hint button; **Test** speaks only for clear mistakes. Cube advice uses the 25% take rule.
+- **Ask** (in the coach panel): type a question ("what are pips?", "why 13→7?"). With the Claude key set it answers about your actual position; offline it answers from the glossary. Moves are written with arrows everywhere (13→7, bar→22, 6→off).
+- **Play a friend online**: in the setup sheet choose **Start a game for a friend** to get a code, and the friend chooses **Join a friend's game**. Each of you has your own coach at your own level; the server (`src/bgroom.js`, a Durable Object) rolls the dice and checks every move. Cube, gammons and a running score work as usual; resign or leave from the menu.
 - Opening-moves table, how to play, and a glossary. Logic in `public/js/backgammon/` (engine: move generation, position judgement, two-ply lookahead).
 
 ## Blackjack

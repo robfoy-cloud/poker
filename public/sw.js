@@ -4,12 +4,12 @@
 //   (Before, it tried the network first, which can hang for a long time with no signal.)
 // - A new version is downloaded in the background and switched to when you tap
 //   "Update now" (or the next time the app is fully closed and reopened).
-const VERSION = '20261117.1449';
+const VERSION = '20261118.1920';
 const CACHE = 'gamecoach-' + VERSION;
 const FILES = [
   './', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/engine.js', 'js/cards.js', 'js/ai.js', 'js/coach.js', 'js/ui.js', 'js/chips.js', 'js/glossary.js', 'js/trainer.js', 'js/showdown.js', 'js/version.js', 'js/auth.js', 'js/online.js', 'js/vendor/supabase.js',
-  'css/chess.css', 'css/blackjack.css', 'css/backgammon.css', 'js/backgammon/app.js', 'js/backgammon/engine.js', 'js/backgammon/glossary.js',
+  'css/chess.css', 'css/blackjack.css', 'css/backgammon.css', 'js/backgammon/app.js', 'js/backgammon/engine.js', 'js/backgammon/glossary.js', 'js/backgammon/online.js', 'js/ask.js',
   'icons/backgammon.svg', 'fonts/marcellus.woff2', 'js/blackjack/app.js', 'js/blackjack/game.js', 'js/blackjack/rules.js', 'js/blackjack/glossary.js',
   'icons/blackjack.svg', 'fonts/oswald-500.woff2', 'fonts/oswald-600.woff2', 'js/chess/app.js', 'js/chess/engine.js', 'js/chess/coach.js', 'js/chess/glossary.js', 'js/vendor/chess.js',
   'icons/chess.svg', 'fonts/cormorant-600.woff2', 'fonts/cormorant-700.woff2',

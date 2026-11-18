@@ -16,6 +16,14 @@ SUPABASE_KEY = "sb_publishable_Gwnaqzgzz-Abvn5hiQvhsw_32P5goIo"
 name = "ROOMS"
 class_name = "PokerRoom"
 
+[[durable_objects.bindings]]
+name = "BGROOMS"
+class_name = "BgRoom"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["PokerRoom"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["BgRoom"]

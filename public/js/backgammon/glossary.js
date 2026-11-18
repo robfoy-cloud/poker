@@ -4,7 +4,7 @@ export const BG_GLOSSARY = {
   'point': 'One of the 24 long triangles. Points are numbered 1 to 24 from your own side: your 1-point is the last one before you bear off. "Making a point" means putting two or more of your checkers on it.',
   'made point': 'A point with two or more of your checkers. Your opponent can\'t land there, so it blocks them.',
   'blot': 'A single checker alone on a point. If your opponent lands on it, it\'s hit and sent to the bar.',
-  'hit': 'Landing on a point with just one enemy checker (a blot). That checker goes to the bar and has to start again. Written with a * in notation, like 13/7*.',
+  'hit': 'Landing on a point with just one enemy checker (a blot). That checker goes to the bar and has to start again. Written with a * in notation, like 13→7*.',
   'bar': 'The ridge down the middle of the board. Hit checkers wait there and must re-enter into the opponent\'s home board before their owner may move anything else.',
   'enter': 'Bringing a checker in from the bar. A roll of 3 enters on the opponent\'s 3-point (your 22-point), and so on — but only onto a point that isn\'t blocked.',
   'dance': 'Failing to enter from the bar because both numbers you rolled land on blocked points. You lose your whole turn.',
@@ -36,7 +36,7 @@ export const BG_GLOSSARY = {
   'closed board': 'All six home-board points made. A checker on the bar can\'t enter at all.',
   'running game': 'A plan to race home: get your back checkers out and avoid contact.',
   'holding game': 'Keeping an anchor in the opponent\'s home board and waiting for a shot.',
-  'notation': 'Moves are written from-point/to-point from the mover\'s side: 13/7 8/7 means one checker from 13 to 7 and one from 8 to 7. "bar/22" enters from the bar; "6/off" bears off; * marks a hit.',
+  'notation': 'Moves are written from-point → to-point, counted from the mover\'s side: 13→7 8→7 means one checker from 13 to 7 and one from 8 to 7. "bar→22" enters from the bar; "6→off" bears off; * marks a hit. (Books usually write a slash instead: 13/7.)',
   'tempo': 'Timing. A hit "gains tempo" because your opponent must spend their next roll re-entering.',
 };
 

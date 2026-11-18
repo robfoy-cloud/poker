@@ -2,10 +2,15 @@
 
 import * as E from './engine.js';
 import { lookupBG, searchBGGlossary } from './glossary.js';
+import { openAsk } from '../ask.js';
+import { BgRemote, createGame } from './online.js';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// moves are shown with arrows (13→7) rather than the slash notation (13/7)
+const arrows = t => String(t).replace(/\//g, '→');
+const N = steps => arrows(E.notation(steps));
 const nextFrame = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 const roll1 = () => 1 + Math.floor(Math.random() * 6);
 const LEVEL_NAMES = ['', 'Learn', 'Advise', 'Test'];
@@ -33,7 +38,7 @@ export class BackgammonApp {
     this.build();
   }
   get level() { return this.settings.level; }
-  get oppName() { return E.LEVELS[this.settings.opp - 1].name; }
+  get oppName() { return this.remote ? ((this.online && this.online.names.them) || 'Your friend') : E.LEVELS[this.settings.opp - 1].name; }
 
   // ---------- markup ----------
   build() {
@@ -58,6 +63,7 @@ export class BackgammonApp {
         <section class="coach-panel bg-coach" id="bgCoach">
           <div class="coach-head"><span>Coach</span>
             <div class="coach-tools">
+              <button class="small" id="bgAskBtn">Ask</button>
               <button class="small" id="bgRulesBtn">Rules</button>
               <button class="small" id="bgWordsBtn">Words</button>
               <button class="small drawer-close" id="bgClose">Close ›</button>
@@ -71,6 +77,7 @@ export class BackgammonApp {
     $('bgLevel').onchange = e => { this.settings.level = +e.target.value; save('bg.settings', this.settings); this.say(`Coaching level changed to <b>${LEVEL_NAMES[this.level]}</b>.`, 'note'); };
     $('bgMenuBtn').onclick = () => this.menu();
     $('bgRulesBtn').onclick = () => this.rules();
+    $('bgAskBtn').onclick = () => this.ask();
     $('bgWordsBtn').onclick = () => this.glossary();
     $('bgTab').onclick = () => this.openDrawer();
     $('bgClose').onclick = () => this.closeDrawer();
@@ -141,7 +148,7 @@ export class BackgammonApp {
 
   // ---------- lifecycle ----------
   show() {
-    if (this.started) return;
+    if (this.started || this.remote) return;
     const saved = load('bg.game');
     if (saved && saved.a && !saved.over) this.resume(saved);
     else this.setup();
@@ -162,11 +169,41 @@ export class BackgammonApp {
       <div class="field"><div>Your checkers</div><div class="seg-row">${[[true, 'Light'], [false, 'Dark']].map(([v, l]) => `<button class="seg ${s.light === v ? 'on' : ''}" data-light="${v}">${l}</button>`).join('')}</div></div>
       <label class="check"><input type="checkbox" id="bgCube" ${s.cube ? 'checked' : ''}><span>Play with the {{doubling cube}}</span></label>
       <label class="field">Speed<select id="bgSpeed"><option value="900" ${s.speed === 900 ? 'selected' : ''}>Slow</option><option value="550" ${s.speed === 550 ? 'selected' : ''}>Normal</option><option value="250" ${s.speed === 250 ? 'selected' : ''}>Fast</option></select></label>
-      <button class="primary wide bg-primary" id="bgStart">Start the game</button>`);
+      <button class="primary wide bg-primary" id="bgStart">Start the game</button>
+      <div class="online-box">
+        <h3>Play a friend online</h3>
+        <p class="muted">Each of you plays on your own phone, with your own coach. The server rolls the dice for both of you.</p>
+        ${localStorage.getItem('bg.onlineCode') ? `<p><button class="primary bg-primary" id="bgRejoin">Rejoin game ${esc(localStorage.getItem('bg.onlineCode'))}</button></p>` : ''}
+        <div class="row"><button class="small" id="bgHost">Start a game for a friend</button><button class="small" id="bgJoin">Join a friend's game</button></div>
+      </div>`);
     ui.open('info');
     let light = s.light;
     document.querySelectorAll('[data-light]').forEach(b => b.onclick = () => { light = b.dataset.light === 'true'; document.querySelectorAll('[data-light]').forEach(x => x.classList.toggle('on', x === b)); });
+    const readCommon = () => {
+      s.level = +document.querySelector('input[name=bgLvl]:checked').value;
+      s.cube = $('bgCube').checked; s.speed = +$('bgSpeed').value; s.light = light;
+      this.shared.settings.name = $('bgName').value.trim().slice(0, 14);
+      this.shared.saveSettings(); save('bg.settings', s); $('bgLevel').value = s.level;
+      if (!this.shared.settings.name) { $('bgName').focus(); $('bgName').placeholder = 'Add your name to play online'; return false; }
+      return true;
+    };
+    $('bgHost').onclick = async () => {
+      if (!readCommon()) return;
+      if (!navigator.onLine) return this.onlineFail('You need an internet connection to play online.');
+      $('infoBody').innerHTML = `<h2 class="bg-h">Play a friend online</h2><p>Setting up a game…</p>`;
+      try { this.startOnline(await createGame(s.cube)); } catch (e) { this.onlineFail(`Couldn't start a game: ${esc(e.message)}`); }
+    };
+    if ($('bgRejoin')) $('bgRejoin').onclick = () => { if (readCommon()) this.startOnline(localStorage.getItem('bg.onlineCode')); };
+    $('bgJoin').onclick = () => {
+      if (!readCommon()) return;
+      $('infoBody').innerHTML = `<h2 class="bg-h">Join a friend's game</h2><p>Enter the code on your friend's screen.</p>
+        <div class="row"><input type="text" id="bgCode" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="e.g. K7QPM" style="text-transform:uppercase;font-size:22px;letter-spacing:4px"><button class="primary bg-primary" id="bgCodeGo">Join</button></div>`;
+      $('bgCode').focus();
+      const go = () => { const c = $('bgCode').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); if (c.length >= 4) this.startOnline(c); };
+      $('bgCodeGo').onclick = go; $('bgCode').onkeydown = e => { if (e.key === 'Enter') go(); };
+    };
     $('bgStart').onclick = () => {
+      this.leaveOnline();
       const changedOpp = +document.querySelector('input[name=bgOpp]:checked').value !== s.opp;
       s.opp = +document.querySelector('input[name=bgOpp]:checked').value;
       s.level = +document.querySelector('input[name=bgLvl]:checked').value;
@@ -254,6 +291,14 @@ export class BackgammonApp {
       }
       d1 = roll1(); d2 = roll1();
     }
+    const played = await this.chooseMove(d1, d2, live);
+    if (!live() || !played) return;
+    this.checkWin(0);
+  }
+
+  // Let you pick your move for a roll, with advice and a check afterwards. Returns the steps played.
+  async chooseMove(d1, d2, live) {
+    const L = this.level;
     this.dice = [d1, d2]; this.used = []; this.render();
     const before = E.clone(this.pos);
     const all = E.legalMoves(this.pos, 0, d1, d2);
@@ -262,7 +307,7 @@ export class BackgammonApp {
       this.say(onBar ? `You rolled ${d1}-${d2} and can't enter from the bar — both points are blocked. You {{dance}}: no move this turn.` : `You rolled ${d1}-${d2} and have no legal move. Your turn passes.`, 'mistake');
       this.status(`No legal move with ${d1}-${d2}.`, true);
       await this.choose([['OK', 'ok', 'go']]);
-      return;
+      return [];
     }
     // think about the best move (for hints and mistake-checking)
     await nextFrame();
@@ -277,13 +322,16 @@ export class BackgammonApp {
     // pick the steps
     this.all = all; this.done = []; this.selected = null;
     const finished = await new Promise(res => { this.finish = res; this.myActions(); this.render(); });
-    if (!live()) return;
+    if (!live()) return null;
     this.finish = null; this.hint = null;
     const played = this.done.slice();
     const after = this.pos;
     this.review(before, played, after, d1, d2, book);
-    if (L === 1) this.say(this.describe(played, before, after, 0), 'you');
-    this.checkWin(0);
+    if (L === 1) {
+      const same = this.best && E.key(this.best.pos) === E.key(after);
+      this.say(same ? `You played ${N(played)} — the move I suggested.` : this.describe(played, before, after, 0), 'you');
+    }
+    return played;
   }
 
   myActions() {
@@ -296,7 +344,7 @@ export class BackgammonApp {
     if (!complete && L === 2) list.push({ label: 'Hint', cls: 'hint', onClick: () => { this.advise(this.dice[0], this.dice[1], this.turnStart()); if (innerWidth < 900) this.openDrawer(); } });
     list.push({ label: 'Resign', cls: 'danger', onClick: e => this.resign(e.target) });
     this.actions(list);
-    if (complete) this.status(`Move complete: <b>${E.notation(this.done)}</b>. Tap <b>Done</b>, or <b>Undo</b> to change it.`);
+    if (complete) this.status(`Move complete: <b>${N(this.done)}</b>. Tap <b>Done</b>, or <b>Undo</b> to change it.`);
   }
   turnStart() { let p = this.pos; for (let k = this.done.length - 1; k >= 0; k--) p = this.unstep(p, this.done[k]); return p; }
   unstep(p, st) {
@@ -403,10 +451,10 @@ export class BackgammonApp {
     const best = this.best; if (!best) return;
     const text = this.describe(best.steps, start, best.pos, 0, true);
     const book = this.first && E.OPENINGS[`${Math.max(d1, d2)}-${Math.min(d1, d2)}`];
-    const why = book && sameNotation(E.notation(best.steps), book[0]) ? ` It's the standard opening move: it ${book[1]}.` : '';
+    const why = book && sameNotation(E.notation(best.steps), book[0]) ? ` It's the standard opening move${text.includes(book[1]) ? '' : `: it ${book[1]}`}.` : '';
     this.hint = best.steps;
     this.render();
-    this.say(`<b>What I'd do: ${E.notation(best.steps)}</b> (highlighted on the board).${why} ${text}`, 'advice');
+    this.say(`<b>What I'd do: ${N(best.steps)}</b> (highlighted on the board).${why} ${text}`, 'advice');
   }
 
   // Compare your move with the best one.
@@ -425,8 +473,7 @@ export class BackgammonApp {
     const risky = myBlots.filter(b => b <= 18).map(b => ({ b, sh: E.shotsAt(after, 1, 25 - b) })).filter(x => x.sh >= 8).sort((a, b) => b.sh - a.sh);
     let why = risky.length ? `It leaves a {{blot}} on your ${risky[0].b}-point that can be hit with ${risky[0].sh} of 36 rolls ({{shots}}).` : '';
     const bestDesc = this.describe(best.steps, before, best.pos, 0, true);
-    const lower = t => t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
-    this.say(`<b>Mistake:</b> ${E.notation(played)} is weaker than <b>${E.notation(best.steps)}</b>. ${why}${L <= 2 && bestDesc ? ` With ${E.notation(best.steps)}, ${lower(bestDesc).replace(/^it /, 'you ').replace(/ it /g, ' it ')}` : ''}`, 'mistake');
+    this.say(`<b>Mistake:</b> ${N(played)} is weaker than <b>${N(best.steps)}</b>. ${why}${L <= 2 && bestDesc ? ` Why ${N(best.steps)}: ${bestDesc}` : ''}`, 'mistake');
   }
 
   // ---------- describing moves ----------
@@ -463,7 +510,7 @@ export class BackgammonApp {
     else if (!exposed.length && mine) parts.push(`It leaves no {{blot|blots}} that can be hit.`);
     else if (exposed.length) {
       const x = exposed[0];
-      parts.push(mine ? `It leaves a {{blot}} on your ${x.b}-point that can be hit with ${x.sh} of 36 rolls (${x.sh} {{shots}}).` : `Their {{blot}} on your ${pt(x.b)}-point can be hit with ${x.sh} of your 36 rolls.`);
+      parts.push(mine ? `It leaves a {{blot}} on your ${x.b}-point that can be hit with ${x.sh} of 36 rolls (${x.sh} {{shots|${x.sh === 1 ? "shot" : "shots"}}}).` : `Their {{blot}} on your ${pt(x.b)}-point can be hit with ${x.sh} of your 36 rolls.`);
     }
     return parts.join(' ');
   }
@@ -523,13 +570,8 @@ export class BackgammonApp {
       this.say(`You {{double}}, and ${this.oppName} {{drop|drops}}! You win ${this.cube} point${this.cube > 1 ? 's' : ''} without finishing the game.`, 'result');
       return this.endGame(0, this.cube, 'drop');
     }
-    const w = E.winChance(this.pos, 0);
-    this.status(`<b>${this.oppName} doubles to ${this.cube * 2}.</b> Take, or drop and lose ${this.cube}?`);
-    if (L === 1) this.say(`${this.oppName} offers the {{doubling cube}}. I'd put your chances at roughly ${Math.round(w * 100)}%. <b>What I'd do: ${w >= 0.25 ? 'take' : 'drop'}.</b> The rule of thumb: {{take}} if you'll win at least 1 game in 4 (25%) — dropping costs ${this.cube} for sure, taking risks ${this.cube * 2} but you can still win.`, 'advice');
-    const answer = await this.choose([['Take', 'take', 'go'], ['Drop', 'drop', 'danger'], ...(L === 2 ? [['Hint', 'hint', 'hint']] : [])]);
-    if (!live()) return true;
-    if (answer === 'hint') { this.say(`I'd put your chances at roughly ${Math.round(w * 100)}%. ${w >= 0.25 ? 'Take' : 'Drop'} — take whenever you'll win at least a quarter of the time.`, 'advice'); return this.offerDouble(1, live); }
-    if ((answer === 'take') !== (w >= 0.25) && Math.abs(w - 0.25) > 0.07) this.say(`<b>Mistake:</b> with roughly ${Math.round(w * 100)}% chances you should ${w >= 0.25 ? 'take' : 'drop'}.`, 'mistake');
+    const answer = await this.askTake(live);
+    if (answer == null) return true;
     if (answer === 'take') {
       this.cube *= 2; this.owner = 0; this.render();
       this.say(`You {{take}}. The game is now worth ${this.cube}, and you own the cube — only you can double next.`, 'you');
@@ -537,6 +579,21 @@ export class BackgammonApp {
     }
     this.say(`You {{drop}}. ${this.oppName} wins ${this.cube} point${this.cube > 1 ? 's' : ''}.`, 'result');
     return this.endGame(1, this.cube, 'drop');
+  }
+
+  // Your opponent has doubled: take or drop? (with advice). Returns 'take', 'drop' or null if the game moved on.
+  async askTake(live) {
+    const L = this.level;
+    const w = E.winChance(this.pos, 0);
+    this.status(`<b>${this.oppName} doubles to ${this.cube * 2}.</b> Take, or drop and lose ${this.cube}?`);
+    if (L === 1) this.say(`${this.oppName} offers the {{doubling cube}}. I'd put your chances at roughly ${Math.round(w * 100)}%. <b>What I'd do: ${w >= 0.25 ? 'take' : 'drop'}.</b> The rule of thumb: {{take}} if you'll win at least 1 game in 4 (25%) — dropping costs ${this.cube} for sure, taking risks ${this.cube * 2} but you can still win.`, 'advice');
+    for (;;) {
+      const answer = await this.choose([['Take', 'take', 'go'], ['Drop', 'drop', 'danger'], ...(L === 2 ? [['Hint', 'hint', 'hint']] : [])]);
+      if (!live()) return null;
+      if (answer === 'hint') { this.say(`I'd put your chances at roughly ${Math.round(w * 100)}%. ${w >= 0.25 ? 'Take' : 'Drop'} — take whenever you'll win at least a quarter of the time.`, 'advice'); continue; }
+      if ((answer === 'take') !== (w >= 0.25) && Math.abs(w - 0.25) > 0.07) this.say(`<b>Mistake:</b> with roughly ${Math.round(w * 100)}% chances you should ${w >= 0.25 ? 'take' : 'drop'}.`, 'mistake');
+      return answer;
+    }
   }
 
   checkWin(s) {
@@ -561,9 +618,191 @@ export class BackgammonApp {
 
   resign(btn) {
     if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Tap again'; setTimeout(() => { btn.dataset.armed = ''; btn.textContent = 'Resign'; }, 3000); return; }
+    if (this.remote) { this.remote.send({ t: 'resign' }); if (this.finish) { const f = this.finish; this.finish = null; this.resigned = true; f(false); } return; }
     this.gen++; this.finish = null;
     this.say(`You resign. ${this.oppName} wins ${this.cube} point${this.cube > 1 ? 's' : ''}.`, 'result');
     this.endGame(1, this.cube);
+  }
+
+  // ---------- asking questions ----------
+  ask() {
+    openAsk({
+      ui: this.shared.ui, game: 'backgammon', titleClass: 'bg-h', buttonClass: 'bg-primary', example: 'pip count',
+      placeholder: "e.g. What are pips? What's a prime? Why move 13→7?",
+      say: (h, k) => this.say(h, k), search: q => searchBGGlossary(q), state: () => this.stateText(),
+    });
+  }
+  stateText() {
+    const p = this.pos; if (!p) return '(no game in progress)';
+    const mine = [], theirs = [];
+    for (let i = 24; i >= 1; i--) { if (p.a[0][i]) mine.push(`${i}-point ×${p.a[0][i]}`); if (p.a[1][25 - i]) theirs.push(`${i}-point ×${p.a[1][25 - i]}`); }
+    const lines = [
+      `Backgammon, against ${this.oppName}. Point numbers are from my side: I move from 24 down to 1 and bear off from points 1-6.`,
+      `My checkers: ${mine.join(', ') || 'none on the board'}${p.a[0][25] ? `; ${p.a[0][25]} on the bar` : ''}${p.a[0][0] ? `; ${p.a[0][0]} borne off` : ''}. My pip count: ${E.pips(p, 0)}.`,
+      `Opponent's checkers (in my numbering): ${theirs.join(', ') || 'none on the board'}${p.a[1][25] ? `; ${p.a[1][25]} on the bar` : ''}${p.a[1][0] ? `; ${p.a[1][0]} borne off` : ''}. Their pip count: ${E.pips(p, 1)}.`,
+      `Cube: ${this.settings.cube ? `${this.cube}${this.owner === 0 ? ', I own it' : this.owner === 1 ? ', they own it' : ', in the middle'}` : 'not used'}. Score: me ${this.score.me}, them ${this.score.them}.`,
+    ];
+    if (this.dice && this.finish) lines.push(`I've rolled ${this.dice.join('-')}${this.done && this.done.length ? ` and played ${N(this.done)} so far` : ''}.`);
+    if (this.best && this.finish) lines.push(`The app's suggested move: ${N(this.best.steps)}.`);
+    return lines.join('\n');
+  }
+
+  // ---------- playing a friend online ----------
+  onlineFail(text) {
+    this.leaveOnline();
+    if (!text) { this.setup(); return; }
+    $('infoBody').innerHTML = `<h2 class="bg-h">Play a friend online</h2><p class="count-result bad">${text}</p><button class="primary wide bg-primary" id="bgoOk">OK</button>`;
+    this.shared.ui.open('info');
+    $('bgoOk').onclick = () => this.setup();
+  }
+  leaveOnline() { localStorage.removeItem('bg.onlineCode'); if (this.remote) { this.remote.leave(); this.remote = null; this.online = null; } }
+
+  startOnline(code) {
+    this.leaveOnline();
+    this.gen = (this.gen || 0) + 1;
+    const gen = this.gen;
+    this.finish = null; this.dice = null; this.oppDice = null; this.hint = null; this.selected = null;
+    this.started = true; this.gameNo = null;
+    this.remote = new BgRemote({ ui: this.shared.ui, name: this.shared.settings.name, titleClass: 'bg-h', onNotice: t => this.say(t, 'note'), onFail: t => this.onlineFail(t) });
+    localStorage.setItem('bg.onlineCode', code);
+    this.remote.lobbySheet('Connecting…');
+    this.remote.connect(code);
+    this.onlineLoop(gen);
+  }
+
+  applyOnline(st) {
+    this.online = st;
+    this.pos = { a: [Int8Array.from(st.a[0]), Int8Array.from(st.a[1])] };
+    this.cube = st.cube; this.owner = st.owner === 'you' ? 0 : st.owner === 'them' ? 1 : -1;
+    this.score = st.score; this.first = st.first; this.over = st.phase === 'over';
+    this.cubeOnline = st.cubeOn;
+  }
+
+  async onlineLoop(gen) {
+    const live = () => gen === this.gen && this.remote;
+    for (;;) {
+      const ev = await this.remote.next();
+      if (!live()) return;
+      if (ev.type === 'notice') { this.say(ev.text, 'note'); continue; }
+      if (ev.state.gameNo !== this.gameNo) {
+        // a new game (or the first one)
+        if (this.gameNo == null) { $('bgLog').innerHTML = ''; this.say(`You're playing <b>${esc(ev.state.names.them)}</b> online. You play the ${this.settings.light ? 'light' : 'dark'} checkers, moving from 24 down to 1 and bearing off at the bottom right. Your coach is set to <b>${LEVEL_NAMES[this.level]}</b>.`, 'note'); }
+        else this.divider(`Game ${ev.state.gameNo}`);
+        this.gameNo = ev.state.gameNo;
+        if (ev.type !== 'resync') { this.pos = E.START(); this.dice = null; this.oppDice = null; }
+      }
+      if (!this.pos) this.applyOnline(ev.state);
+      this.online = ev.state;
+      this.remote.busy = true;
+      await this.onlineEvent(ev, live);
+      if (!live()) return;
+      this.applyOnline(ev.state);
+      this.render();
+      this.remote.busy = false;
+      await this.onlinePrompt(ev.state, live);
+      if (!live()) return;
+    }
+  }
+
+  async onlineEvent(ev, live) {
+    const L = this.level, sp = this.settings.speed, them = ev.state.names.them;
+    switch (ev.type) {
+      case 'opening': {
+        for (const [mine, theirs] of ev.rolls) {
+          this.dice = [mine]; this.oppDice = [theirs]; this.render();
+          await sleep(sp + 200);
+          if (mine === theirs && L <= 2) this.say(`Opening roll: you both rolled ${mine}, so you roll again.`, 'note');
+        }
+        const [mine, theirs] = ev.rolls[ev.rolls.length - 1];
+        if (L <= 2) this.say(`{{opening roll|Opening roll}}: you rolled ${mine}, ${esc(them)} rolled ${theirs}. ${ev.first === 'you' ? `You go first, and your first move uses both numbers: ${Math.max(mine, theirs)}-${Math.min(mine, theirs)}.` : `${esc(them)} goes first, playing ${Math.max(mine, theirs)}-${Math.min(mine, theirs)}.`}`, 'street');
+        this.oppDice = ev.first === 'them' ? ev.state.dice : null;
+        this.dice = null;
+        break;
+      }
+      case 'rolled':
+        if (ev.who === 'them') { this.oppDice = ev.dice; this.dice = null; this.render(); this.status(`${esc(them)} rolled ${Math.max(...ev.dice)}-${Math.min(...ev.dice)} and is choosing a move…`, true); }
+        break;
+      case 'nomove':
+        if (ev.who === 'you') { this.dice = ev.dice; this.render(); this.say(this.pos.a[0][25] ? `You rolled ${ev.dice.join('-')} and can't enter from the bar — you {{dance}}. No move this turn.` : `You rolled ${ev.dice.join('-')} and have no legal move.`, 'mistake'); await sleep(sp * 2); }
+        else { this.oppDice = ev.dice; this.render(); if (L <= 2) this.say(`${esc(them)} rolled ${ev.dice.join('-')} and can't move${this.pos.a[1][25] ? ' — they {{dance}} on the bar' : ''}.`, 'action'); await sleep(sp); }
+        break;
+      case 'moved':
+        if (ev.who === 'them') {
+          const before = E.clone(this.pos);
+          const d = this.oppDice || [];
+          for (const st of ev.steps) { this.pos = E.applyStep(this.pos, 1, st); this.lastOpp = st; this.render(); await sleep(sp * 0.7); if (!live()) return; }
+          this.lastOpp = null;
+          if (L <= 2) {
+            let t = `${esc(them)} rolled <b>${d.length ? `${Math.max(...d)}-${Math.min(...d)}` : ''}</b>. ${this.describe(ev.steps, before, this.pos, 1)}`;
+            if (L === 2) t = t.split('. ').slice(0, 3).join('. ');
+            this.say(t, 'action');
+          } else if (ev.steps.some(x => x.hit)) this.status('You were hit.', true);
+          if (L === 1 && this.pos.a[0][25]) this.say(`You have ${this.pos.a[0][25] > 1 ? 'checkers' : 'a checker'} on the {{bar}}. On your turn you must {{enter}} ${this.pos.a[0][25] > 1 ? 'them' : 'it'} first: a roll of 3 enters on point 22, a 5 on point 20, and so on.`, 'note');
+        }
+        this.dice = null;
+        break;
+      case 'doubled':
+        if (ev.who === 'you') this.status(`You've doubled to ${ev.to}. Waiting for ${esc(them)} to take or drop…`, true);
+        break;
+      case 'took':
+        if (ev.who === 'them') this.say(`${esc(them)} {{take|takes}}: the game is now worth ${ev.state.cube}, and ${esc(them)} owns the cube.`, 'street');
+        else this.say(`You {{take}}. The game is now worth ${ev.state.cube}, and you own the cube — only you can double next.`, 'you');
+        break;
+      case 'won': {
+        const pts = ev.points;
+        const who = ev.who === 'you' ? 'You win' : `${esc(them)} wins`;
+        const name = { 1: 'a single game', 2: 'a {{gammon}} (double)', 3: 'a {{backgammon}} (triple)' }[ev.kind];
+        const how = ev.how === 'drop' ? (ev.who === 'you' ? `${esc(them)} {{drop|dropped}} your double.` : 'You dropped the double.') : ev.how === 'resign' ? (ev.who === 'you' ? `${esc(them)} resigned.` : 'You resigned.') : '';
+        this.say(`${how} ${who} ${ev.how === 'finish' ? name : ''} — ${pts} point${pts > 1 ? 's' : ''}. Score: you ${ev.state.score.me}, ${esc(them)} ${ev.state.score.them}.`, 'result');
+        this.dice = null; this.oppDice = null; this.hint = null;
+        break;
+      }
+      case 'resync':
+        break;
+    }
+  }
+
+  async onlinePrompt(st, live) {
+    const L = this.level, them = esc(st.names.them);
+    if (st.phase === 'over') {
+      if (st.ready.me) { this.status(`Waiting for ${them} to start the next game…`, true); this.actions([]); return; }
+      this.status(`Score: you ${st.score.me} — ${them} ${st.score.them}.`, true);
+      await this.choose([['Next game', 'next', 'go']]);
+      if (!live()) return;
+      this.remote.send({ t: 'next' });
+      this.status(`Waiting for ${them}…`, true);
+      return;
+    }
+    if (st.turn === 'you' && st.phase === 'roll') {
+      this.dice = null; this.render();
+      const canDouble = st.cubeOn && st.owner !== 'them' && st.cube < 64 && !st.first;
+      const w = E.winChance(this.pos, 0);
+      if (canDouble && L === 1 && w >= 0.62) this.say(`I'd put your chances at roughly ${Math.round(w * 100)}%. ${w >= 0.68 ? `That's enough to {{double}}.` : 'Doubling is usually right from about 68%; not quite yet.'}`, 'advice');
+      this.status(`<b>Your turn.</b> ${canDouble ? 'Roll the dice, or offer a double first.' : 'Roll the dice.'}`);
+      const c = await this.choose([['Roll', 'roll', 'go'], ...(canDouble ? [[`Double to ${st.cube * 2}`, 'double']] : []), ['Resign', 'resign', 'danger']]);
+      if (!live()) return;
+      if (c === 'resign') { this.remote.send({ t: 'resign' }); return; }
+      this.remote.send({ t: c });
+      if (c === 'roll') this.status('Rolling…', true);
+      return;
+    }
+    if (st.turn === 'you' && st.phase === 'move') {
+      const [d1, d2] = st.dice;
+      this.oppDice = null; this.resigned = false;
+      const played = await this.chooseMove(d1, d2, live);
+      if (!live() || this.resigned) return;
+      this.remote.send({ t: 'move', steps: (played || []).map(x => ({ from: x.from, to: x.to, die: x.die })) });
+      this.status(`Waiting for ${them}…`, true); this.actions([]);
+      return;
+    }
+    if (st.phase === 'double' && st.doubler === 'them') {
+      this.say(`${them} offers the {{doubling cube}} at ${st.cube * 2}.`, 'street');
+      const a = await this.askTake(live);
+      if (!live() || !a) return;
+      this.remote.send({ t: a });
+      return;
+    }
+    if (st.turn === 'them' && st.phase !== 'double') { this.status(`${them}'s turn…`, true); this.actions([]); }
   }
 
   // ---------- drawing ----------
@@ -621,7 +860,7 @@ export class BackgammonApp {
     for (let k = 0; k < p.a[0][0]; k++) svg += `<rect x="${tx}" y="${G.H - G.F - 6 - k * 7}" width="${tw}" height="6" rx="2" fill="${myFill}" stroke="${myStroke}" stroke-width=".8"/>`;
     for (let k = 0; k < p.a[1][0]; k++) svg += `<rect x="${tx}" y="${G.F + k * 7}" width="${tw}" height="6" rx="2" fill="${theirFill}" stroke="${theirStroke}" stroke-width=".8"/>`;
     // the cube
-    if (this.settings.cube) {
+    if (this.remote ? this.cubeOnline : this.settings.cube) {
       const cy = this.owner === -1 ? G.H / 2 : this.owner === 0 ? G.H - G.F - 140 : G.F + 120;
       const cx = this.owner === -1 ? bx : G.T0 + G.TRAY / 2;
       svg += `<g class="cube"><rect x="${cx - 12}" y="${cy - 12}" width="24" height="24" rx="4"/><text x="${cx}" y="${cy + 5}" text-anchor="middle">${this.owner === -1 && this.cube === 1 ? 64 : this.cube}</text></g>`;
@@ -678,7 +917,7 @@ export class BackgammonApp {
         <span class="c-name">${esc(name)}<small>${sub}</small></span>
         <span class="bg-stats"><span title="Pip count"><b>${E.pips(p, s)}</b> pips</span>${off ? `<span>${off} off</span>` : ''}${bar ? `<span class="on-bar">${bar} on bar</span>` : ''}</span>`;
     };
-    $('bgOpp').innerHTML = row(1, this.oppName, `Level ${this.settings.opp} of 4 · score ${this.score.them}`.replace(' · ', ', '));
+    $('bgOpp').innerHTML = row(1, this.oppName, this.remote ? `Playing online, score ${this.score.them}` : `Level ${this.settings.opp} of 4, score ${this.score.them}`);
     $('bgMe').innerHTML = row(0, this.shared.settings.name || 'You', `Score ${this.score.me}${this.cube > 1 ? `, cube at ${this.cube}` : ''}`);
   }
 
@@ -686,7 +925,8 @@ export class BackgammonApp {
   menu() {
     const ui = this.shared.ui;
     $('infoBody').innerHTML = `<h2 class="bg-h">Menu</h2>
-      <p class="muted">Score against ${esc(this.oppName)}: you ${this.score.me}, ${esc(this.oppName)} ${this.score.them}.</p>
+      <p class="muted">Score ${this.remote ? 'in this online game' : 'against ' + esc(this.oppName)}: you ${this.score.me}, ${esc(this.oppName)} ${this.score.them}.</p>
+      ${this.remote ? `<button class="menu-item" id="gmLeave">Leave the online game</button>` : ''}
       <button class="menu-item" id="gmNew">New game / settings</button>
       <button class="menu-item" id="gmRules">How to play</button>
       <button class="menu-item" id="gmOpen">The best opening moves</button>
@@ -696,6 +936,7 @@ export class BackgammonApp {
       <button class="menu-item" id="gmAccount">Account and who can use the app</button>`;
     ui.open('info');
     $('gmNew').onclick = () => this.setup();
+    if ($('gmLeave')) $('gmLeave').onclick = () => { ui.close('info'); this.leaveOnline(); this.started = false; this.setup(); };
     $('gmRules').onclick = () => this.rules();
     $('gmOpen').onclick = () => this.openings();
     $('gmWords').onclick = () => this.glossary();
@@ -717,7 +958,7 @@ export class BackgammonApp {
 
   openings() {
     $('infoBody').innerHTML = this.termify(`<h2 class="bg-h">The best opening moves</h2><p class="muted">The first roll is never a double. Point numbers are from your side.</p>
-      <table class="odds-table"><tbody>${Object.entries(E.OPENINGS).map(([k, [m, why]]) => `<tr><td><b>${k}</b></td><td><b>${m}</b><div class="muted">${why}</div></td></tr>`).join('')}</tbody></table>`);
+      <table class="odds-table"><tbody>${Object.entries(E.OPENINGS).map(([k, [m, why]]) => `<tr><td><b>${k}</b></td><td><b>${arrows(m)}</b><div class="muted">${why}</div></td></tr>`).join('')}</tbody></table>`);
     this.shared.ui.open('info');
   }
 

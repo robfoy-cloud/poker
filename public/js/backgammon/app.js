@@ -461,8 +461,12 @@ export class BackgammonApp {
   review(before, played, after, d1, d2, book) {
     const L = this.level;
     const ranked = this.ranked;
-    if (!ranked || ranked.length < 2) return;
-    const bestScore = ranked[0].score;
+    if (!ranked || ranked.length < 2 || !this.best) return;
+    // The move the coach suggested (the book move on the opening roll) is never a mistake,
+    // and other moves are measured against that suggestion, not a different engine favourite.
+    if (E.key(this.best.pos) === E.key(after)) return;
+    if (book && sameNotation(E.notation(played), book[0])) return;
+    const bestScore = this.best.deep ? this.best.score : E.deepScore(this.best.pos, 0);
     let mine = ranked.find(m => E.key(m.pos) === E.key(after));
     const myScore = mine && mine.deep ? mine.score : E.deepScore(after, 0);
     const loss = bestScore - myScore;
